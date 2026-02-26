@@ -49,7 +49,7 @@ function StatItem({
   const count = useCountUp(value, isVisible)
 
   return (
-    <div className="flex flex-col items-center gap-1 text-center">
+    <div className="flex flex-col gap-1 text-center">
       <span className="text-4xl font-bold tabular-nums text-foreground md:text-5xl">
         {count.toLocaleString()}
         {suffix}
@@ -79,12 +79,30 @@ export function Stats() {
   }, [])
 
   return (
-    <section ref={ref} className="border-y bg-secondary/30 py-20">
+    <section ref={ref} className="border-y border-border/60 bg-foreground py-20">
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-10 px-6 md:grid-cols-4">
         {stats.map((stat) => (
-          <StatItem key={stat.label} {...stat} isVisible={isVisible} />
+          <div key={stat.label} className="flex flex-col gap-1 text-center">
+            <span className="text-4xl font-bold tabular-nums text-background md:text-5xl">
+              {isVisible ? (
+                <StatCountDisplay target={stat.value} suffix={stat.suffix} isVisible={isVisible} />
+              ) : (
+                <>0{stat.suffix}</>
+              )}
+            </span>
+            <span className="text-sm text-background/60">{stat.label}</span>
+          </div>
         ))}
       </div>
     </section>
+  )
+}
+
+function StatCountDisplay({ target, suffix, isVisible }: { target: number; suffix: string; isVisible: boolean }) {
+  const count = useCountUp(target, isVisible)
+  return (
+    <>
+      {count.toLocaleString()}{suffix}
+    </>
   )
 }

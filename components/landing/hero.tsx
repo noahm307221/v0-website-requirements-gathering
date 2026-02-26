@@ -1,72 +1,121 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowUpRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      {/* Background image with overlay */}
-      <div className="absolute inset-0">
-        <Image
-          src="/images/hero.jpg"
-          alt=""
-          fill
-          className="object-cover"
-          priority
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
-      </div>
+    <section className="relative overflow-hidden border-b border-border/60">
+      <div className="mx-auto flex max-w-7xl flex-col lg:flex-row">
+        {/* Left -- copy */}
+        <div className="flex flex-1 flex-col justify-center px-6 py-20 lg:py-28 lg:pr-16">
+          <p className="mb-5 text-[0.8rem] font-medium uppercase tracking-widest text-muted-foreground">
+            Community-powered fitness
+          </p>
 
-      <div className="relative mx-auto flex max-w-7xl flex-col items-center px-6 py-28 text-center md:py-40">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm text-muted-foreground">
-          <span className="inline-block size-2 rounded-full bg-primary" />
-          Now connecting communities near you
-        </div>
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            Your city is full of{" "}
+            <span className="font-serif italic text-accent">people</span>{" "}
+            who move like you
+          </h1>
 
-        <h1 className="max-w-3xl text-balance text-4xl font-bold leading-tight tracking-tight text-foreground md:text-6xl md:leading-tight">
-          Find your tribe.{" "}
-          <span className="text-primary">Move together.</span>
-        </h1>
+          <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed text-muted-foreground">
+            Discover local sports clubs, health communities and fitness events.
+            From padel to running, yoga to cycling -- find your people and
+            get moving.
+          </p>
 
-        <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
-          Discover local sports clubs, health communities, and fitness events.
-          From padel to running, yoga to cycling -- find your people and get
-          moving.
-        </p>
+          <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <Button size="lg" className="gap-2 rounded-lg px-7 text-[0.9rem]" asChild>
+              <Link href="/events">
+                Browse Events
+                <ArrowUpRight className="size-4" />
+              </Link>
+            </Button>
+            <Button variant="ghost" size="lg" className="text-[0.9rem] text-muted-foreground" asChild>
+              <Link href="#how-it-works">See how it works</Link>
+            </Button>
+          </div>
 
-        <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-          <Button size="lg" className="gap-2 px-8" asChild>
-            <Link href="/events">
-              Browse Events
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
-          <Button variant="outline" size="lg" className="px-8" asChild>
-            <Link href="#how-it-works">How It Works</Link>
-          </Button>
-        </div>
-
-        {/* Trust indicators */}
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
+          {/* Social proof strip */}
+          <div className="mt-14 flex items-center gap-6 border-t border-border/60 pt-8">
+            <div className="flex -space-x-2.5">
+              {["A", "J", "M", "S", "R"].map((letter) => (
                 <div
-                  key={i}
-                  className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-accent text-xs font-medium text-accent-foreground"
+                  key={letter}
+                  className="flex size-9 items-center justify-center rounded-full border-2 border-background bg-secondary text-xs font-semibold text-secondary-foreground"
                 >
-                  {String.fromCharCode(64 + i)}
+                  {letter}
                 </div>
               ))}
             </div>
-            <span>10,000+ members</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-foreground">10,000+ members</span>
+              <span className="text-xs text-muted-foreground">across 15 cities</span>
+            </div>
           </div>
-          <div className="hidden h-4 w-px bg-border sm:block" />
-          <span>500+ clubs</span>
-          <div className="hidden h-4 w-px bg-border sm:block" />
-          <span>200+ events this month</span>
+        </div>
+
+        {/* Right -- image grid */}
+        <div className="relative flex-1 lg:min-h-[600px]">
+          <div className="grid h-full grid-cols-2 gap-1.5 p-1.5 lg:absolute lg:inset-0 lg:p-0 lg:gap-1">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-xl lg:rounded-none lg:rounded-tl-none">
+              <Image
+                src="/images/padel.jpg"
+                alt="Padel players in action"
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+            <div className="relative aspect-[3/4] overflow-hidden rounded-xl lg:rounded-none">
+              <Image
+                src="/images/running.jpg"
+                alt="Running club in a park"
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+            <div className="relative aspect-[3/4] overflow-hidden rounded-xl lg:rounded-none">
+              <Image
+                src="/images/yoga.jpg"
+                alt="Outdoor yoga session"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+            <div className="relative aspect-[3/4] overflow-hidden rounded-xl lg:rounded-none">
+              <Image
+                src="/images/cycling.jpg"
+                alt="Community cycling event"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+          </div>
+
+          {/* Stats overlay on the image grid */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-foreground/60 to-transparent p-8 lg:flex">
+            <div className="pointer-events-auto flex w-full justify-between text-background">
+              <div>
+                <span className="text-2xl font-bold">500+</span>
+                <p className="text-xs opacity-80">Sports Clubs</p>
+              </div>
+              <div>
+                <span className="text-2xl font-bold">200+</span>
+                <p className="text-xs opacity-80">Monthly Events</p>
+              </div>
+              <div>
+                <span className="text-2xl font-bold">15</span>
+                <p className="text-xs opacity-80">Cities</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

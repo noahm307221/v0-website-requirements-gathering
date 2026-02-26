@@ -25,10 +25,14 @@ export default function EventsPage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
       <div className="mb-10">
+        <p className="mb-3 text-[0.8rem] font-medium uppercase tracking-widest text-muted-foreground">
+          Explore
+        </p>
         <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-          Browse Events
+          Browse{" "}
+          <span className="font-serif italic text-accent">events</span>
         </h1>
-        <p className="mt-2 text-lg text-muted-foreground">
+        <p className="mt-3 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground">
           Discover sports events and fitness activities happening near you
         </p>
       </div>

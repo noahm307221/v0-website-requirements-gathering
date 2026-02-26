@@ -3,35 +3,38 @@ import { ContactForm } from "@/components/contact-form"
 
 export function ContactSection() {
   return (
-    <section id="contact" className="py-24">
+    <section id="contact" className="py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="flex flex-col gap-16 lg:flex-row">
+        <div className="flex flex-col gap-16 lg:flex-row lg:gap-24">
           {/* Left column */}
           <div className="flex flex-1 flex-col gap-6">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl text-balance">
-              Get in touch
+            <p className="text-[0.8rem] font-medium uppercase tracking-widest text-muted-foreground">
+              Contact
+            </p>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              Let{"'"}s{" "}
+              <span className="font-serif italic text-accent">connect</span>
             </h2>
-            <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
-              Have a question or want to list your club? We'd love to hear from
-              you. Send us a message and we'll get back to you as soon as
-              possible.
+            <p className="max-w-md text-[0.95rem] leading-relaxed text-muted-foreground">
+              Want to list your club or have a question about the platform?
+              We{"'"}d love to hear from you.
             </p>
 
             <div className="mt-4 flex flex-col gap-4">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+              <div className="flex items-center gap-3.5 text-sm text-muted-foreground">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-secondary text-foreground">
                   <Mail className="size-4" />
                 </div>
                 <span>hello@balance.app</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+              <div className="flex items-center gap-3.5 text-sm text-muted-foreground">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-secondary text-foreground">
                   <Phone className="size-4" />
                 </div>
                 <span>+44 20 1234 5678</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+              <div className="flex items-center gap-3.5 text-sm text-muted-foreground">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-secondary text-foreground">
                   <MapPin className="size-4" />
                 </div>
                 <span>London, United Kingdom</span>

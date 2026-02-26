@@ -2,14 +2,6 @@ import Image from "next/image"
 import { Calendar, Clock, MapPin, Users } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { Event } from "@/lib/data"
 import { getCategoryById } from "@/lib/data"
@@ -25,9 +17,9 @@ export function EventCard({ event, className }: EventCardProps) {
   const almostFull = spotsLeft <= 5
 
   return (
-    <Card
+    <article
       className={cn(
-        "group overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-1",
+        "group overflow-hidden rounded-xl border border-border/60 bg-card transition-all duration-200 hover:border-foreground/20 hover:shadow-lg",
         className,
       )}
     >
@@ -40,6 +32,7 @@ export function EventCard({ event, className }: EventCardProps) {
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-foreground/30 to-transparent" />
         {category && (
           <Badge
             className={cn(
@@ -51,7 +44,7 @@ export function EventCard({ event, className }: EventCardProps) {
           </Badge>
         )}
         {event.price === "Free" ? (
-          <Badge className="absolute top-3 right-3 border-none bg-primary text-primary-foreground text-xs font-medium">
+          <Badge className="absolute top-3 right-3 border-none bg-foreground text-background text-xs font-medium">
             Free
           </Badge>
         ) : (
@@ -61,29 +54,35 @@ export function EventCard({ event, className }: EventCardProps) {
         )}
       </div>
 
-      <CardHeader className="pb-2">
-        <CardTitle className="line-clamp-1 text-base">{event.title}</CardTitle>
-        <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">
-          {event.description}
-        </p>
-      </CardHeader>
+      <div className="flex flex-col gap-3 p-5">
+        <div>
+          <h3 className="text-[0.95rem] font-semibold leading-snug text-foreground">
+            {event.title}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {event.description}
+          </p>
+        </div>
 
-      <CardContent className="flex flex-col gap-2 pb-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="size-3.5 shrink-0" />
-          <span>{format(new Date(event.date), "EEE, MMM d")}</span>
-          <Clock className="ml-2 size-3.5 shrink-0" />
-          <span>{event.time}</span>
+        <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Calendar className="size-3.5 shrink-0" />
+            <span>{format(new Date(event.date), "EEE, MMM d")}</span>
+            <span className="text-border">|</span>
+            <Clock className="size-3.5 shrink-0" />
+            <span>{event.time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="size-3.5 shrink-0" />
+            <span className="truncate">{event.location}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="size-3.5 shrink-0" />
-          <span className="truncate">{event.location}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
+
+        <div className="flex items-center gap-3 border-t border-border/60 pt-3">
           <Users className="size-3.5 shrink-0 text-muted-foreground" />
           <span
             className={cn(
-              "font-medium",
+              "text-sm font-medium",
               almostFull ? "text-destructive" : "text-muted-foreground",
             )}
           >
@@ -93,7 +92,7 @@ export function EventCard({ event, className }: EventCardProps) {
             <div
               className={cn(
                 "h-full rounded-full transition-all",
-                almostFull ? "bg-destructive" : "bg-primary",
+                almostFull ? "bg-destructive" : "bg-accent",
               )}
               style={{
                 width: `${(event.spotsTaken / event.spotsTotal) * 100}%`,
@@ -101,13 +100,7 @@ export function EventCard({ event, className }: EventCardProps) {
             />
           </div>
         </div>
-      </CardContent>
-
-      <CardFooter>
-        <Button className="w-full" size="sm">
-          View Details
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </article>
   )
 }

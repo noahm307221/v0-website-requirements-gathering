@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter, Instrument_Serif } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const _inter = Inter({ subsets: ["latin"] });
+const _instrumentSerif = Instrument_Serif({ weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {

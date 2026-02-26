@@ -73,8 +73,8 @@ export function SearchFilters({
           className={cn(
             "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
             selectedCategory === "all"
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              ? "border-foreground bg-foreground text-background"
+              : "border-border/60 bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground",
           )}
         >
           All
@@ -88,8 +88,8 @@ export function SearchFilters({
             className={cn(
               "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
               selectedCategory === cat.id
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                ? "border-foreground bg-foreground text-background"
+                : "border-border/60 bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground",
             )}
           >
             {cat.name}

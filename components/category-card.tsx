@@ -35,17 +35,17 @@ export function CategoryCard({ category, className }: CategoryCardProps) {
     <Link
       href={`/events?category=${category.id}`}
       className={cn(
-        "group flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center transition-all duration-300 hover:shadow-md hover:-translate-y-1",
+        "group flex flex-col items-center gap-3 rounded-xl border border-border/60 bg-card p-6 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-md",
         className,
       )}
     >
       <div
         className={cn(
-          "flex size-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110",
+          "flex size-11 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110",
           category.color,
         )}
       >
-        {Icon && <Icon className="size-6" />}
+        {Icon && <Icon className="size-5" />}
       </div>
       <span className="text-sm font-medium text-foreground">{category.name}</span>
     </Link>
