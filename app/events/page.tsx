@@ -1,65 +1,27 @@
-"use client"
+import { Suspense } from "react"
+import type { Metadata } from "next"
+import { EventsContent } from "@/components/events/events-content"
 
-import { useState, useMemo } from "react"
-import { useSearchParams } from "next/navigation"
-import { events as allEvents } from "@/lib/data"
-import { SearchFilters } from "@/components/events/search-filters"
-import { EventsGrid } from "@/components/events/events-grid"
+export const metadata: Metadata = {
+  title: "Browse Events",
+  description:
+    "Discover sports events, fitness activities, and club meetups happening near you.",
+}
+
+function EventsSkeleton() {
+  return (
+    <div className="animate-pulse space-y-6">
+      <div className="h-12 rounded-lg bg-muted" />
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-80 rounded-xl bg-muted" />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function EventsPage() {
-  const searchParams = useSearchParams()
-  const initialCategory = searchParams.get("category") ?? "all"
-
-  const [search, setSearch] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory)
-  const [sortBy, setSortBy] = useState("date")
-
-  const filteredEvents = useMemo(() => {
-    let result = [...allEvents]
-
-    // Text search
-    if (search) {
-      const query = search.toLowerCase()
-      result = result.filter(
-        (e) =>
-          e.title.toLowerCase().includes(query) ||
-          e.location.toLowerCase().includes(query) ||
-          e.description.toLowerCase().includes(query) ||
-          e.organizer.toLowerCase().includes(query),
-      )
-    }
-
-    // Category filter
-    if (selectedCategory !== "all") {
-      result = result.filter((e) => e.categoryId === selectedCategory)
-    }
-
-    // Sort
-    switch (sortBy) {
-      case "date":
-        result.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        )
-        break
-      case "spots":
-        result.sort(
-          (a, b) =>
-            b.spotsTotal - b.spotsTaken - (a.spotsTotal - a.spotsTaken),
-        )
-        break
-      case "popular":
-        result.sort((a, b) => b.spotsTaken - a.spotsTaken)
-        break
-    }
-
-    return result
-  }, [search, selectedCategory, sortBy])
-
-  function clearFilters() {
-    setSearch("")
-    setSelectedCategory("all")
-  }
-
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
       <div className="mb-10">
@@ -71,19 +33,9 @@ export default function EventsPage() {
         </p>
       </div>
 
-      <SearchFilters
-        search={search}
-        onSearchChange={setSearch}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        resultCount={filteredEvents.length}
-      />
-
-      <div className="mt-8">
-        <EventsGrid events={filteredEvents} onClearFilters={clearFilters} />
-      </div>
+      <Suspense fallback={<EventsSkeleton />}>
+        <EventsContent />
+      </Suspense>
     </div>
   )
 }
