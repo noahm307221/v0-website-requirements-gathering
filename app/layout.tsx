@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Instrument_Serif } from 'next/font/google'
+import { DM_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import './globals.css'
 
-const _inter = Inter({ subsets: ["latin"] });
-const _instrumentSerif = Instrument_Serif({ weight: "400", subsets: ["latin"] });
+const _dmSans = DM_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
