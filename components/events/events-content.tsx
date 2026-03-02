@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { events as allEvents } from "@/lib/data"
+import { supabase } from "@/lib/supabase"
+import { type Event } from "@/lib/data"
 import { SearchFilters } from "@/components/events/search-filters"
 import { EventsGrid } from "@/components/events/events-grid"
 
@@ -10,9 +11,34 @@ export function EventsContent() {
   const searchParams = useSearchParams()
   const initialCategory = searchParams.get("category") ?? "all"
 
+  const [allEvents, setAllEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState(initialCategory)
   const [sortBy, setSortBy] = useState("date")
+
+  useEffect(() => {
+    async function fetchEvents() {
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+
+      if (error) {
+        console.error("Error fetching events:", error)
+      } else {
+        const mapped = data.map((e: any) => ({
+          ...e,
+          categoryId: e.category_id,
+          spotsTotal: e.spots_total,
+          spotsTaken: e.spots_taken,
+        }))
+        setAllEvents(mapped)
+      }
+      setLoading(false)
+    }
+
+    fetchEvents()
+  }, [])
 
   const filteredEvents = useMemo(() => {
     let result = [...allEvents]
@@ -34,15 +60,10 @@ export function EventsContent() {
 
     switch (sortBy) {
       case "date":
-        result.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        )
+        result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         break
       case "spots":
-        result.sort(
-          (a, b) =>
-            b.spotsTotal - b.spotsTaken - (a.spotsTotal - a.spotsTaken),
-        )
+        result.sort((a, b) => b.spotsTotal - b.spotsTaken - (a.spotsTotal - a.spotsTaken))
         break
       case "popular":
         result.sort((a, b) => b.spotsTaken - a.spotsTaken)
@@ -50,11 +71,15 @@ export function EventsContent() {
     }
 
     return result
-  }, [search, selectedCategory, sortBy])
+  }, [search, selectedCategory, sortBy, allEvents])
 
   function clearFilters() {
     setSearch("")
     setSelectedCategory("all")
+  }
+
+  if (loading) {
+    return <div className="text-muted-foreground">Loading events...</div>
   }
 
   return (
@@ -68,7 +93,6 @@ export function EventsContent() {
         onSortChange={setSortBy}
         resultCount={filteredEvents.length}
       />
-
       <div className="mt-8">
         <EventsGrid events={filteredEvents} onClearFilters={clearFilters} />
       </div>
