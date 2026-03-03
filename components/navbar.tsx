@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Menu, ArrowUpRight } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Menu, ArrowUpRight, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
+import { supabase } from "@/lib/supabase"
 
 const navLinks = [
   { href: "/events", label: "Events" },
@@ -23,7 +24,26 @@ const navLinks = [
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push("/")
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-lg">
@@ -50,16 +70,33 @@ export function Navbar() {
           ))}
         </div>
 
+        {/* Desktop auth buttons */}
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
-            <Link href="/events">Log in</Link>
-          </Button>
-          <Button size="sm" className="gap-1.5 rounded-lg" asChild>
-            <Link href="/events">
-              Get Started
-              <ArrowUpRight className="size-3.5" />
-            </Link>
-          </Button>
+          {user ? (
+            <>
+              <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5" asChild>
+                <Link href="/profile">
+                  <User className="size-3.5" />
+                  {user.user_metadata?.full_name?.split(" ")[0] ?? "Profile"}
+                </Link>
+              </Button>
+              <Button size="sm" variant="outline" className="rounded-lg" onClick={handleSignOut}>
+                Sign out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
+                <Link href="/auth/login">Log in</Link>
+              </Button>
+              <Button size="sm" className="gap-1.5 rounded-lg" asChild>
+                <Link href="/auth/signup">
+                  Get Started
+                  <ArrowUpRight className="size-3.5" />
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile sheet */}
@@ -92,12 +129,25 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="mt-6 flex flex-col gap-2 px-4">
-                <Button variant="outline" className="rounded-lg" asChild>
-                  <Link href="/events" onClick={() => setOpen(false)}>Log in</Link>
-                </Button>
-                <Button className="rounded-lg" asChild>
-                  <Link href="/events" onClick={() => setOpen(false)}>Get Started</Link>
-                </Button>
+                {user ? (
+                  <>
+                    <Button variant="outline" className="rounded-lg" asChild>
+                      <Link href="/profile" onClick={() => setOpen(false)}>Profile</Link>
+                    </Button>
+                    <Button className="rounded-lg" onClick={() => { handleSignOut(); setOpen(false) }}>
+                      Sign out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" className="rounded-lg" asChild>
+                      <Link href="/auth/login" onClick={() => setOpen(false)}>Log in</Link>
+                    </Button>
+                    <Button className="rounded-lg" asChild>
+                      <Link href="/auth/signup" onClick={() => setOpen(false)}>Get Started</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </SheetContent>
