@@ -7,10 +7,12 @@ export const supabase = createClient(
 
 // helper used in client components to verify admin email
 export async function isAdmin(email: string): Promise<boolean> {
-  const { data } = await supabase
+  console.log("Checking admin for:", email)
+  const { data, error } = await supabase
     .from("admins")
     .select("email")
     .eq("email", email)
     .maybeSingle()
+  console.log("Admin check result:", data, error)
   return !!data
 }

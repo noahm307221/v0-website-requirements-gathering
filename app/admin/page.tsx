@@ -87,9 +87,13 @@ export default function AdminPage() {
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(form.address)}`
         )
         const geoData = await geoRes.json()
+        console.log("Geocoding result:", geoData)
         if (geoData.length > 0) {
           latitude = parseFloat(geoData[0].lat)
           longitude = parseFloat(geoData[0].lon)
+          console.log("Coordinates:", latitude, longitude)
+        } else {
+          alert("Could not find coordinates for this address. Try a more specific address.")
         }
       } catch (e) {
         console.error("Geocoding failed:", e)
@@ -148,7 +152,7 @@ export default function AdminPage() {
             { key: "category_id", label: "Category (e.g. running, yoga)" },
             { key: "time", label: "Time (e.g. 09:00)" },
             { key: "location", label: "Location Name" },
-            { key: "address", label: "Full Address" },
+            { key: "address", label: "Full Address (include street, city & postcode for location search)" },
             { key: "organiser", label: "Organiser" },
             { key: "price", label: "Price (e.g. Free or $10)" },
             { key: "spots_total", label: "Total Spots" },
