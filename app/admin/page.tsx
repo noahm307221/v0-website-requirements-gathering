@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 export default function AdminPage() {
   const [events, setEvents] = useState<any[]>([])
@@ -20,6 +21,13 @@ export default function AdminPage() {
     price: "",
     image: "",
   })
+const router = useRouter()
+
+useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session) router.push("/admin/login")
+  })
+}, [])
 
   async function fetchEvents() {
     const { data } = await supabase.from("events").select("*").order("date")
@@ -63,9 +71,20 @@ export default function AdminPage() {
     fetchEvents()
   }
 
+
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
+    <div className="flex items-center justify-between mb-8">
+  <h1 className="text-3xl font-bold">Admin Panel</h1>
+  <button
+    onClick={async () => {
+      await supabase.auth.signOut()
+      router.push("/admin/login")
+    }}
+    className="text-sm text-muted-foreground hover:text-foreground"
+  >
+    Sign out
+  </button>
+</div>
 
       {/* Add Event Form */}
       <div className="bg-muted rounded-xl p-6 mb-10">
