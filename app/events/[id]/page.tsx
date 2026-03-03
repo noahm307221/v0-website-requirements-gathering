@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
-import { Calendar, Clock, MapPin, Users, ArrowLeft, Tag } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, ArrowLeft } from "lucide-react"
 import { format } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { getCategoryById } from "@/lib/data"
@@ -15,9 +15,18 @@ export default function EventDetailPage() {
   const router = useRouter()
   const [event, setEvent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
+  const [registered, setRegistered] = useState(false)
+  const [registering, setRegistering] = useState(false)
+  const [regMessage, setRegMessage] = useState("")
 
   useEffect(() => {
-    async function fetchEvent() {
+    async function load() {
+      // Get user
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+
+      // Get event
       const { data, error } = await supabase
         .from("events")
         .select("*")
@@ -34,10 +43,78 @@ export default function EventDetailPage() {
           spotsTaken: data.spots_taken,
         })
       }
+
+      // Check if already registered
+      if (user) {
+        const { data: reg } = await supabase
+          .from("registrations")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("event_id", id)
+          .single()
+        setRegistered(!!reg)
+      }
+
       setLoading(false)
     }
-    fetchEvent()
+    load()
   }, [id])
+
+  async function handleRegister() {
+    if (!user) {
+      router.push("/auth/login")
+      return
+    }
+
+    setRegistering(true)
+    setRegMessage("")
+
+    if (registered) {
+      // Unregister
+      await supabase
+        .from("registrations")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("event_id", id)
+
+      // Decrease spots taken
+      await supabase
+        .from("events")
+        .update({ spots_taken: event.spotsTaken - 1 })
+        .eq("id", id)
+
+      setRegistered(false)
+      setEvent({ ...event, spotsTaken: event.spotsTaken - 1 })
+      setRegMessage("You've been unregistered from this event.")
+    } else {
+      // Check spots available
+      if (event.spotsTaken >= event.spotsTotal) {
+        setRegMessage("Sorry, this event is full!")
+        setRegistering(false)
+        return
+      }
+
+      // Register
+      await supabase.from("registrations").insert([{
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        event_id: id,
+        registered_at: new Date().toISOString(),
+      }])
+
+      // Increase spots taken
+      await supabase
+        .from("events")
+        .update({ spots_taken: event.spotsTaken + 1 })
+        .eq("id", id)
+
+      setRegistered(true)
+      setEvent({ ...event, spotsTaken: event.spotsTaken + 1 })
+      setRegMessage("You're registered! See you there 🎉")
+    }
+
+    setRegistering(false)
+  }
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Loading...</div>
   if (!event) return <div className="p-12 text-center text-muted-foreground">Event not found.</div>
@@ -45,6 +122,7 @@ export default function EventDetailPage() {
   const category = getCategoryById(event.categoryId)
   const spotsLeft = event.spotsTotal - event.spotsTaken
   const almostFull = spotsLeft <= 5
+  const isFull = spotsLeft <= 0
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
@@ -59,7 +137,7 @@ export default function EventDetailPage() {
       {/* Image */}
       <div className="relative aspect-[16/9] overflow-hidden rounded-2xl mb-8">
         <Image
-          src={event.image}
+          src={event.image || "/placeholder.jpg"}
           alt={event.title}
           fill
           className="object-cover"
@@ -107,7 +185,7 @@ export default function EventDetailPage() {
           <div>
             <p className="text-xs text-muted-foreground">Availability</p>
             <p className={cn("font-medium", almostFull ? "text-destructive" : "")}>
-              {spotsLeft} spots left of {event.spotsTotal}
+              {isFull ? "Event full" : `${spotsLeft} spots left of ${event.spotsTotal}`}
             </p>
           </div>
         </div>
@@ -119,9 +197,36 @@ export default function EventDetailPage() {
         <p className="text-muted-foreground leading-relaxed">{event.description}</p>
       </div>
 
-      {/* CTA */}
-      <button className="w-full rounded-xl bg-foreground text-background py-3 font-medium hover:opacity-90 transition-opacity">
-        Register for this event
+      {/* Registration message */}
+      {regMessage && (
+        <div className={cn(
+          "rounded-xl p-4 mb-4 text-sm font-medium",
+          registered ? "bg-green-50 text-green-700" : "bg-muted text-muted-foreground"
+        )}>
+          {regMessage}
+        </div>
+      )}
+
+      {/* CTA button */}
+      <button
+        onClick={handleRegister}
+        disabled={registering || (isFull && !registered)}
+        className={cn(
+          "w-full rounded-xl py-3 font-medium transition-opacity disabled:opacity-50",
+          registered
+            ? "bg-muted text-foreground hover:bg-muted/80"
+            : "bg-foreground text-background hover:opacity-90"
+        )}
+      >
+        {registering
+          ? "Processing..."
+          : registered
+          ? "Cancel registration"
+          : isFull
+          ? "Event full"
+          : user
+          ? "Register for this event"
+          : "Log in to register"}
       </button>
     </div>
   )
