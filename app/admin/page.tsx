@@ -72,21 +72,22 @@ useEffect(() => {
   }
 
 
-  return (
+return (
+  <div>
     <div className="flex items-center justify-between mb-8">
-  <h1 className="text-3xl font-bold">Admin Panel</h1>
-  <button
-    onClick={async () => {
-      await supabase.auth.signOut()
-      router.push("/admin/login")
-    }}
-    className="text-sm text-muted-foreground hover:text-foreground"
-  >
-    Sign out
-  </button>
-</div>
+      <h1 className="text-3xl font-bold">Admin Panel</h1>
+      <button
+        onClick={async () => {
+          await supabase.auth.signOut()
+          router.push("/admin/login")
+        }}
+        className="text-sm text-muted-foreground hover:text-foreground"
+      >
+        Sign out
+      </button>
+    </div>
 
-      {/* Add Event Form */}
+    {/* Add Event Form */}
       <div className="bg-muted rounded-xl p-6 mb-10">
         <h2 className="text-xl font-semibold mb-4">Add New Event</h2>
         <div className="grid gap-3 sm:grid-cols-2">

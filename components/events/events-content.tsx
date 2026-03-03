@@ -23,6 +23,8 @@ export function EventsContent() {
         .from("events")
         .select("*")
 
+      console.log("Supabase response:", data, error)
+
       if (error) {
        console.error("Error fetching events:", JSON.stringify(error))
       } else {
