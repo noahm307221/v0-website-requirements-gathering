@@ -24,7 +24,7 @@ export function EventsContent() {
         .select("*")
 
       if (error) {
-        console.error("Error fetching events:", error)
+       console.error("Error fetching events:", JSON.stringify(error))
       } else {
         const mapped = data.map((e: any) => ({
           ...e,
