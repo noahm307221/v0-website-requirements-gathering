@@ -36,23 +36,23 @@ export default function ProfilePage() {
       setUser(user)
 
       // Load or create profile
-      const { data: profile } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single()
+        .maybeSingle()
 
-      if (profile) {
-        setProfile(profile)
+      if (profileData) {
+        setProfile(profileData)
         setForm({
-          full_name: profile.full_name ?? user.user_metadata?.full_name ?? "",
-          location: profile.location ?? "",
-          bio: profile.bio ?? "",
-          favourite_categories: profile.favourite_categories
-            ? profile.favourite_categories.split(",").filter(Boolean)
+          full_name: profileData.full_name ?? user.user_metadata?.full_name ?? "",
+          location: profileData.location ?? "",
+          bio: profileData.bio ?? "",
+          favourite_categories: profileData.favourite_categories
+            ? profileData.favourite_categories.split(",").filter(Boolean)
             : [],
-          is_public: profile.is_public ?? true,
-          avatar_url: profile.avatar_url ?? "",
+          is_public: profileData.is_public ?? true,
+          avatar_url: profileData.avatar_url ?? "",
         })
       } else {
         // Create profile on first visit
@@ -75,14 +75,32 @@ export default function ProfilePage() {
         })
       }
 
-      // Load registrations with event details
+      // Load registrations then fetch events separately
       const { data: regs } = await supabase
         .from("registrations")
-        .select("*, events(*)")
+        .select("*")
         .eq("user_id", user.id)
         .order("registered_at", { ascending: false })
 
-      setRegistrations(regs ?? [])
+      console.log("Regs:", regs)
+
+      if (regs && regs.length > 0) {
+        const eventIds = regs.map(r => r.event_id)
+        const { data: eventData } = await supabase
+          .from("events")
+          .select("*")
+          .in("id", eventIds)
+
+        console.log("Events:", eventData)
+
+        const merged = regs.map(r => ({
+          ...r,
+          events: eventData?.find(e => e.id === r.event_id) ?? null
+        }))
+        setRegistrations(merged)
+      } else {
+        setRegistrations([])
+      }
       setLoading(false)
     }
     load()

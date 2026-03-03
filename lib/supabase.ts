@@ -11,6 +11,6 @@ export async function isAdmin(email: string): Promise<boolean> {
     .from("admins")
     .select("email")
     .eq("email", email)
-    .single()
+    .maybeSingle()
   return !!data
 }
