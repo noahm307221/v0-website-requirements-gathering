@@ -77,10 +77,31 @@ export default function AdminPage() {
     if (!form.spots_total || isNaN(parseInt(form.spots_total))) return setFormError("Total spots must be a number")
     if (!form.price.trim()) return setFormError("Price is required (use 'Free' if free)")
 
+    // Geocode the address to get coordinates
+    let latitude = null
+    let longitude = null
+
+    if (form.address) {
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(form.address)}`
+        )
+        const geoData = await geoRes.json()
+        if (geoData.length > 0) {
+          latitude = parseFloat(geoData[0].lat)
+          longitude = parseFloat(geoData[0].lon)
+        }
+      } catch (e) {
+        console.error("Geocoding failed:", e)
+      }
+    }
+
     const { error } = await supabase.from("events").insert([{
       ...form,
       spots_total: parseInt(form.spots_total) || 0,
       spots_taken: parseInt(form.spots_taken) || 0,
+      latitude,
+      longitude,
     }])
 
     if (error) {
