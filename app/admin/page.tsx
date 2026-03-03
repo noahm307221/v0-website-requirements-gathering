@@ -21,45 +21,55 @@ export default function AdminPage() {
     price: "",
     image: "",
   })
+  const [formError, setFormError] = useState("")
 const router = useRouter()
 
-useEffect(() => {
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (!session) router.push("/admin/login")
-  })
-}, [])
-
+  // fetchEvents needs to be available for auth check below
   async function fetchEvents() {
     const { data } = await supabase.from("events").select("*").order("date")
     setEvents(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchEvents() }, [])
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push("/admin/login")
+        return
+      }
+      fetchEvents()
+    }
+    checkAuth()
+  }, [])
 
   async function handleAdd() {
+    setFormError("")
+
+    // Validation
+    if (!form.title.trim()) return setFormError("Title is required")
+    if (!form.category_id.trim()) return setFormError("Category is required")
+    if (!form.date.match(/^\d{4}-\d{2}-\d{2}$/)) return setFormError("Date must be in YYYY-MM-DD format (e.g. 2026-03-15)")
+    if (!form.time.match(/^\d{2}:\d{2}$/)) return setFormError("Time must be in HH:MM format (e.g. 09:00)")
+    if (!form.location.trim()) return setFormError("Location is required")
+    if (!form.spots_total || isNaN(parseInt(form.spots_total))) return setFormError("Total spots must be a number")
+    if (!form.price.trim()) return setFormError("Price is required (use 'Free' if free)")
+
     const { error } = await supabase.from("events").insert([{
       ...form,
       spots_total: parseInt(form.spots_total) || 0,
       spots_taken: parseInt(form.spots_taken) || 0,
     }])
+
     if (error) {
-      alert("Error adding event: " + error.message)
+      setFormError("Error adding event: " + error.message)
     } else {
       alert("Event added!")
+      setFormError("")
       setForm({
-        title: "",
-        description: "",
-        category_id: "",
-        date: "",
-        time: "",
-        location: "",
-        address: "",
-        spots_total: "",
-        spots_taken: "0",
-        organiser: "",
-        price: "",
-        image: "",
+        title: "", description: "", category_id: "", date: "",
+        time: "", location: "", address: "", spots_total: "",
+        spots_taken: "0", organiser: "", price: "", image: "",
       })
       fetchEvents()
     }
@@ -94,14 +104,13 @@ return (
           {[
             { key: "title", label: "Title" },
             { key: "category_id", label: "Category (e.g. running, yoga)" },
-            { key: "date", label: "Date (YYYY-MM-DD)" },
             { key: "time", label: "Time (e.g. 09:00)" },
             { key: "location", label: "Location Name" },
             { key: "address", label: "Full Address" },
             { key: "organiser", label: "Organiser" },
             { key: "price", label: "Price (e.g. Free or $10)" },
             { key: "spots_total", label: "Total Spots" },
-            { key: "image", label: "Image path (e.g. /images/running.jpg)" },
+            { key: "image", label: "Image URL or path" },
           ].map(({ key, label }) => (
             <div key={key}>
               <label className="text-sm text-muted-foreground mb-1 block">{label}</label>
@@ -112,6 +121,18 @@ return (
               />
             </div>
           ))}
+
+          {/* Date picker */}
+          <div>
+            <label className="text-sm text-muted-foreground mb-1 block">Date</label>
+            <input
+              type="date"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
+          </div>
+
           <div className="sm:col-span-2">
             <label className="text-sm text-muted-foreground mb-1 block">Description</label>
             <textarea
@@ -122,6 +143,9 @@ return (
             />
           </div>
         </div>
+        {formError && (
+          <p className="mt-3 text-sm text-destructive font-medium">{formError}</p>
+        )}
         <button
           onClick={handleAdd}
           className="mt-4 rounded-lg bg-foreground text-background px-6 py-2 text-sm font-medium"
