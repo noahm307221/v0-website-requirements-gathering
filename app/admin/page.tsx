@@ -167,28 +167,33 @@ export default function AdminPage() {
           {/* Image upload */}
           <div className="sm:col-span-2">
             <label className="text-sm text-muted-foreground mb-1 block">Event Image</label>
+            
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer rounded-lg border border-dashed bg-background px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:border-foreground transition-colors">
+                {uploading ? "Uploading..." : "📁 Upload image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-sm text-muted-foreground">or paste a URL below</span>
+            </div>
+
             <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm mt-2"
+              placeholder="https://images.unsplash.com/..."
+              value={form.image}
+              onChange={(e) => setForm({ ...form, image: e.target.value })}
             />
-            {uploading && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
+
             {form.image && (
               <div className="mt-2">
                 <p className="text-xs text-muted-foreground mb-1">Preview:</p>
                 <img src={form.image} alt="Preview" className="h-32 rounded-lg object-cover" />
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Or paste a URL directly:
-            </p>
-            <input
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm mt-1"
-              placeholder="https://images.unsplash.com/..."
-              value={form.image}
-              onChange={(e) => setForm({ ...form, image: e.target.value })}
-            />
           </div>
         </div>
 

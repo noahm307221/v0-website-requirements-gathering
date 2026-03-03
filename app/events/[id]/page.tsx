@@ -76,7 +76,7 @@ export default function EventDetailPage() {
 
       {/* Title & organiser */}
       <h1 className="text-3xl font-bold tracking-tight mb-1">{event.title}</h1>
-      <p className="text-muted-foreground mb-6">Organised by {event.organizer}</p>
+      <p className="text-muted-foreground mb-6">Organised by {event.organiser}</p>
 
       {/* Details */}
       <div className="grid gap-3 sm:grid-cols-2 mb-8">
