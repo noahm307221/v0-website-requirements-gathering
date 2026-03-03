@@ -141,11 +141,13 @@ export default function ProfilePage() {
     }))
   }
 
+  const today = new Date().toISOString().split("T")[0] // gives "2026-03-03"
+
   const upcomingEvents = registrations.filter(r =>
-    r.events && new Date(r.events.date) >= new Date()
+    r.events && r.events.date >= today
   )
   const pastEvents = registrations.filter(r =>
-    r.events && new Date(r.events.date) < new Date()
+    r.events && r.events.date < today
   )
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Loading...</div>
