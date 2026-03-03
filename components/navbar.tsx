@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
-import { supabase } from "@/lib/supabase"
+import { supabase, isAdmin } from "@/lib/supabase"
 
 const navLinks = [
   { href: "/events", label: "Events" },
@@ -25,16 +25,27 @@ const navLinks = [
 export function Navbar() {
   const [open, setOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [isUserAdmin, setIsUserAdmin] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+    // Get initial session and check admin status
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      if (user?.email) {
+        isAdmin(user.email).then(setIsUserAdmin)
+      }
+    })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user?.email) {
+        isAdmin(session.user.email).then(setIsUserAdmin)
+      } else {
+        setIsUserAdmin(false)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -80,6 +91,11 @@ export function Navbar() {
                   {user.user_metadata?.full_name?.split(" ")[0] ?? "Profile"}
                 </Link>
               </Button>
+              {isUserAdmin && (
+                <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
+                  <Link href="/admin">Manage Events</Link>
+                </Button>
+              )}
               <Button size="sm" variant="outline" className="rounded-lg" onClick={handleSignOut}>
                 Sign out
               </Button>
@@ -134,6 +150,11 @@ export function Navbar() {
                     <Button variant="outline" className="rounded-lg" asChild>
                       <Link href="/profile" onClick={() => setOpen(false)}>Profile</Link>
                     </Button>
+                    {isUserAdmin && (
+                      <Button variant="ghost" className="text-muted-foreground rounded-lg" asChild>
+                        <Link href="/admin" onClick={() => setOpen(false)}>Manage Events</Link>
+                      </Button>
+                    )}
                     <Button className="rounded-lg" onClick={() => { handleSignOut(); setOpen(false) }}>
                       Sign out
                     </Button>
