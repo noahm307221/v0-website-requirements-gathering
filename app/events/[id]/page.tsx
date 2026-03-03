@@ -50,7 +50,7 @@ export default function EventDetailPage() {
           .from("registrations")
           .select("id")
           .eq("user_id", user.id)
-          .eq("event_id", id)
+          .eq("event_id", parseInt(id as string))
           .single()
         setRegistered(!!reg)
       }
@@ -75,13 +75,7 @@ export default function EventDetailPage() {
         .from("registrations")
         .delete()
         .eq("user_id", user.id)
-        .eq("event_id", id)
-
-      // Decrease spots taken
-      await supabase
-        .from("events")
-        .update({ spots_taken: event.spotsTaken - 1 })
-        .eq("id", id)
+        .eq("event_id", parseInt(id as string))
 
       setRegistered(false)
       setEvent({ ...event, spotsTaken: event.spotsTaken - 1 })
@@ -98,7 +92,7 @@ export default function EventDetailPage() {
       await supabase.from("registrations").insert([{
         id: crypto.randomUUID(),
         user_id: user.id,
-        event_id: id,
+        event_id: parseInt(id as string),
         registered_at: new Date().toISOString(),
       }])
 
