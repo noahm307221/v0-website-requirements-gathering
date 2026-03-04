@@ -94,14 +94,16 @@ export default function GroupPage() {
         table: "group_messages",
         filter: `group_id=eq.${id}`,
       }, (payload) => {
+        console.log("New message received:", payload)
         setMessages(prev => {
           const newMsg = payload.new as any
-          // Only add if not already in the list
           if (prev.some(m => m.id === newMsg.id)) return prev
           return [...prev, newMsg]
         })
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log("Subscription status:", status)
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [id])

@@ -1,9 +1,9 @@
-import { createClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/ssr"
 
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim()
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim()
+
+export const supabase = createBrowserClient(supabaseUrl, supabaseKey)
 
 // helper used in client components to verify admin email
 export async function isAdmin(email: string): Promise<boolean> {
