@@ -21,7 +21,6 @@ const navLinks = [
   { href: "/events", label: "Events" },
   { href: "/community", label: "Community" },
   { href: "/compete", label: "Compete" },
-  // Dashboard replaces the previous Feed section
   { href: "/#how-it-works", label: "How It Works" },
   { href: "/#contact", label: "Contact" },
 ]
@@ -78,15 +77,24 @@ export function Navbar() {
 
         {/* Desktop links */}
         <div className="hidden items-center gap-1 md:flex">
+          {user && (
+            <Link
+              href="/dashboard"
+              className={cn(
+                "rounded-md px-3.5 py-2 text-[0.84rem] font-medium transition-colors hover:text-foreground",
+                pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              Home
+            </Link>
+          )}
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
                 "rounded-md px-3.5 py-2 text-[0.84rem] font-medium transition-colors hover:text-foreground",
-                pathname === link.href
-                  ? "text-foreground"
-                  : "text-muted-foreground",
+                pathname === link.href ? "text-foreground" : "text-muted-foreground",
               )}
             >
               {link.label}
@@ -164,6 +172,18 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              {user && (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "rounded-md px-4 py-3 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground",
+                    pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  Home
+                </Link>
+              )}
               <div className="mt-6 flex flex-col gap-2 px-4">
                 {user ? (
                   <>
