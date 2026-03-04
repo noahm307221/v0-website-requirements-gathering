@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { User, MapPin, Calendar } from "lucide-react"
 import { format } from "date-fns"
+import { followUser, unfollowUser, sendFriendRequest, getFollowStatus } from "@/lib/social"
 
 export default function PublicProfilePage() {
   const { id } = useParams()
@@ -12,6 +13,8 @@ export default function PublicProfilePage() {
   const [profile, setProfile] = useState<any>(null)
   const [registrations, setRegistrations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [followStatus, setFollowStatus] = useState<any>(null)
 
   useEffect(() => {
     async function load() {
@@ -27,6 +30,13 @@ export default function PublicProfilePage() {
       }
 
       setProfile(profile)
+
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      setCurrentUser(currentUser)
+      if (currentUser && currentUser.id !== id) {
+        const status = await getFollowStatus(currentUser.id, id as string)
+        setFollowStatus(status)
+      }
 
       const { data: regs } = await supabase
         .from("registrations")
@@ -78,6 +88,46 @@ export default function PublicProfilePage() {
           )}
         </div>
       </div>
+
+      {currentUser && currentUser.id !== profile.id && (
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={async () => {
+              if (followStatus?.isFollowing) {
+                await unfollowUser(currentUser.id, profile.id)
+                setFollowStatus((s: any) => ({ ...s, isFollowing: false }))
+              } else {
+                await followUser(currentUser.id, profile.id)
+                setFollowStatus((s: any) => ({ ...s, isFollowing: true }))
+              }
+            }}
+            className={`text-sm px-4 py-2 rounded-xl font-medium transition-colors ${
+              followStatus?.isFollowing
+                ? "border hover:bg-muted"
+                : "bg-foreground text-background hover:opacity-90"
+            }`}
+          >
+            {followStatus?.isFollowing ? "Following" : "Follow"}
+          </button>
+          {!followStatus?.isFriend && !followStatus?.friendRequest && (
+            <button
+              onClick={async () => {
+                await sendFriendRequest(currentUser.id, profile.id)
+                setFollowStatus((s: any) => ({ ...s, friendRequest: { status: "pending" } }))
+              }}
+              className="text-sm px-4 py-2 rounded-xl border font-medium hover:bg-muted transition-colors"
+            >
+              + Friend
+            </button>
+          )}
+          {followStatus?.friendRequest?.status === "pending" && (
+            <span className="text-sm px-4 py-2 rounded-xl border text-muted-foreground">Request sent</span>
+          )}
+          {followStatus?.isFriend && (
+            <span className="text-sm px-4 py-2 rounded-xl border text-muted-foreground">Friends ✓</span>
+          )}
+        </div>
+      )}
 
       {/* Bio */}
       {profile.bio && (

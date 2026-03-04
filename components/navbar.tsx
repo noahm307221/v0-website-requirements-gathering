@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Menu, ArrowUpRight, User } from "lucide-react"
+import { Menu, ArrowUpRight, User, Bell } from "lucide-react"
 import { SearchOverlay } from "@/components/search"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +21,7 @@ const navLinks = [
   { href: "/events", label: "Events" },
   { href: "/community", label: "Community" },
   { href: "/compete", label: "Compete" },
+  { href: "/feed", label: "Feed" },
   { href: "/#how-it-works", label: "How It Works" },
   { href: "/#contact", label: "Contact" },
 ]
@@ -29,15 +30,24 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [isUserAdmin, setIsUserAdmin] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
     // Get initial session and check admin status
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       setUser(user)
       if (user?.email) {
         isAdmin(user.email).then(setIsUserAdmin)
+      }
+      if (user?.id) {
+        const { count } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("read", false)
+        setUnreadCount(count ?? 0)
       }
     })
 
@@ -89,6 +99,12 @@ export function Navbar() {
           <SearchOverlay />
           {user ? (
             <>
+              <Link href="/notifications" className="relative p-2 rounded-lg hover:bg-muted transition-colors">
+                <Bell className="size-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 size-2 rounded-full bg-red-500" />
+                )}
+              </Link>
               <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5" asChild>
                 <Link href="/profile">
                   <User className="size-3.5" />
