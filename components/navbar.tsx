@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Menu, ArrowUpRight, User } from "lucide-react"
+import { SearchOverlay } from "@/components/search"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -84,6 +85,7 @@ export function Navbar() {
 
         {/* Desktop auth buttons */}
         <div className="hidden items-center gap-3 md:flex">
+          <SearchOverlay />
           {user ? (
             <>
               <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5" asChild>
