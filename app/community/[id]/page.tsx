@@ -93,27 +93,12 @@ export default function GroupPage() {
         schema: "public",
         table: "group_messages",
         filter: `group_id=eq.${id}`,
-      }, async (payload) => {
-        const newMsg = payload.new
+      }, (payload) => {
         setMessages(prev => {
-          // Don't add if already exists
-          if (prev.find(m => m.id === newMsg.id)) return prev
+          const newMsg = payload.new as any
+          // Only add if not already in the list
+          if (prev.some(m => m.id === newMsg.id)) return prev
           return [...prev, newMsg]
-        })
-
-        // Load profile for new message sender if not already loaded
-        setProfiles(prev => {
-          if (!prev[newMsg.user_id]) {
-            supabase
-              .from("profiles")
-              .select("id, full_name, avatar_url")
-              .eq("id", newMsg.user_id)
-              .maybeSingle()
-              .then(({ data }) => {
-                if (data) setProfiles(p => ({ ...p, [data.id]: data }))
-              })
-          }
-          return prev
         })
       })
       .subscribe()
@@ -156,6 +141,7 @@ export default function GroupPage() {
   async function handleSendMessage() {
     if (!newMessage.trim() || !user || !isMember) return
     setSending(true)
+    setNewMessage("")
 
     await supabase.from("group_messages").insert([{
       id: crypto.randomUUID(),
@@ -165,7 +151,6 @@ export default function GroupPage() {
       created_at: new Date().toISOString(),
     }])
 
-    setNewMessage("")
     setSending(false)
   }
 
