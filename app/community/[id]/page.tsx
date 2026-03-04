@@ -95,7 +95,11 @@ export default function GroupPage() {
         filter: `group_id=eq.${id}`,
       }, async (payload) => {
         const newMsg = payload.new
-        setMessages(prev => [...prev, newMsg])
+        setMessages(prev => {
+          // Don't add if already exists
+          if (prev.find(m => m.id === newMsg.id)) return prev
+          return [...prev, newMsg]
+        })
 
         // Load profile for new message sender if not already loaded
         setProfiles(prev => {

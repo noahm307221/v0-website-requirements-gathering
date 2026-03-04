@@ -33,9 +33,9 @@ export default function CreateGroupPage() {
     if (!file) return
     setUploading(true)
     const fileName = `group-${Date.now()}.${file.name.split(".").pop()}`
-    const { error } = await supabase.storage.from("event-images").upload(fileName, file)
+    const { error } = await supabase.storage.from("group-images").upload(fileName, file)
     if (!error) {
-      const { data } = supabase.storage.from("event-images").getPublicUrl(fileName)
+      const { data } = supabase.storage.from("group-images").getPublicUrl(fileName)
       setForm({ ...form, image: data.publicUrl })
     }
     setUploading(false)
