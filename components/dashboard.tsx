@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
-import { getLevel, BADGES } from "@/lib/points"
+import { getLevel } from "@/lib/points"
 import { format, isToday, isTomorrow } from "date-fns"
-import { MapPin, Users, Calendar, User, ArrowRight, MessageCircle, Zap, ChevronRight, Activity, Sparkles } from "lucide-react"
+import { MapPin, Users, Calendar, User, ArrowRight, Activity, Flame, Plus, CheckCircle2 } from "lucide-react"
 
 interface Props { userId: string; userEmail: string }
 
@@ -13,16 +13,8 @@ function formatEventDate(dateStr: string) {
   const d = new Date(dateStr)
   if (isToday(d)) return "Today"
   if (isTomorrow(d)) return "Tomorrow"
-  return format(d, "EEE d MMM")
+  return format(d, "EEE, MMM do")
 }
-
-const EVENT_PILL_COLORS = [
-  "bg-rose-100 text-rose-700",
-  "bg-violet-100 text-violet-700",
-  "bg-amber-100 text-amber-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-sky-100 text-sky-700",
-]
 
 export function Dashboard({ userId, userEmail }: Props) {
   const [data, setData] = useState<any>(null)
@@ -30,51 +22,53 @@ export function Dashboard({ userId, userEmail }: Props) {
 
   useEffect(() => {
     async function load() {
-      const [profileRes, statsRes, badgesRes, regsRes, groupsRes, leaguesRes, followsRes, allStatsRes] = await Promise.all([
+      const [profileRes, statsRes, regsRes, groupsRes, followsRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("user_stats").select("*").eq("user_id", userId),
-        supabase.from("user_badges").select("*").eq("user_id", userId),
         supabase.from("registrations").select("*").eq("user_id", userId),
         supabase.from("group_members").select("group_id, groups(*)").eq("user_id", userId).limit(6),
-        supabase.from("league_members").select("*, leagues(*)").eq("user_id", userId),
         supabase.from("follows").select("following_id").eq("follower_id", userId),
-        supabase.from("user_stats").select("user_id, total_points"),
       ])
 
       const today = new Date().toISOString().split("T")[0]
+      const profile = profileRes.data
+      
+      // 1. Get Upcoming Events
       let upcomingEvents: any[] = []
-      if (regsRes.data?.length > 0) {
-        const { data: eventData } = await supabase.from("events").select("*").in("id", regsRes.data.map(r => r.event_id))
-        upcomingEvents = regsRes.data
+      const registeredIds = regsRes.data?.map(r => r.event_id) || []
+      
+      if (registeredIds.length > 0) {
+        const { data: eventData } = await supabase.from("events").select("*").in("id", registeredIds)
+        upcomingEvents = (regsRes.data || [])
           .map(r => ({ ...r, event: eventData?.find(e => e.id === r.event_id) }))
           .filter(r => r.event && r.event.date >= today)
           .sort((a, b) => a.event.date.localeCompare(b.event.date))
-          .slice(0, 6)
       }
 
-      const profile = profileRes.data
+      // 2. Get Recommended Events
       const favCats = profile?.favourite_categories?.split(",").filter(Boolean) || []
+      const userLocation = profile?.location || ""
       let recommendedEvents: any[] = []
-      const registeredIds = regsRes.data?.map(r => r.event_id) || []
 
-      if (favCats.length > 0) {
-        const { data: recEvents } = await supabase.from("events").select("*").in("category_id", favCats).gte("date", today).limit(8)
-        recommendedEvents = (recEvents || []).filter(e => !registeredIds.includes(e.id))
+      let recQuery = supabase.from("events").select("*").gte("date", today)
+      
+      if (favCats.length > 0) recQuery = recQuery.in("category_id", favCats)
+      if (userLocation) recQuery = recQuery.ilike("location", `%${userLocation}%`)
+      
+      const { data: recData } = await recQuery.limit(12)
+      
+      recommendedEvents = (recData || []).filter(e => !registeredIds.includes(e.id)).slice(0, 5)
+
+      if (recommendedEvents.length === 0) {
+         const { data: fallbackEvents } = await supabase.from("events").select("*").gte("date", today).limit(10)
+         recommendedEvents = (fallbackEvents || []).filter(e => !registeredIds.includes(e.id)).slice(0, 5)
       }
-      if (recommendedEvents.length < 5) {
-        const { data: moreEvents } = await supabase.from("events").select("*").gte("date", today).limit(12)
-        const extra = (moreEvents || []).filter(e => !registeredIds.includes(e.id) && !recommendedEvents.find(r => r.id === e.id))
-        recommendedEvents = [...recommendedEvents, ...extra]
-      }
-      recommendedEvents = recommendedEvents.slice(0, 5)
 
       const stats = statsRes.data || []
       const totalPoints = stats.reduce((s: number, r: any) => s + (r.total_points || 0), 0)
       const maxStreak = Math.max(...stats.map((r: any) => r.streak_weeks || 0), 0)
 
-      const earnedBadgeIds = new Set(badgesRes.data?.map((b: any) => b.badge_id) || [])
-      const nextBadge = BADGES.find(b => !earnedBadgeIds.has(b.id))
-
+      // 3. Get Friend Activity
       let friendActivity: any[] = []
       const followingIds = followsRes.data?.map(f => f.following_id) || []
       if (followingIds.length > 0) {
@@ -91,18 +85,12 @@ export function Dashboard({ userId, userEmail }: Props) {
         ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8)
       }
 
-      let suggestedPeople: any[] = []
-      if (followingIds.length < 15) {
-        const { data: suggestions } = await supabase.from("profiles").select("id, full_name, avatar_url, location").eq("is_public", true).neq("id", userId).limit(20)
-        suggestedPeople = (suggestions || []).filter(p => !followingIds.includes(p.id)).slice(0, 5)
-      }
-
       setData({
         profile, totalPoints, maxStreak,
         level: getLevel(totalPoints),
         upcomingEvents, recommendedEvents,
         myGroups: groupsRes.data?.map(m => m.groups).filter(Boolean) || [],
-        friendActivity, suggestedPeople,
+        friendActivity,
       })
       setLoading(false)
     }
@@ -110,213 +98,240 @@ export function Dashboard({ userId, userEmail }: Props) {
   }, [userId])
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[70vh]">
-      <div className="size-8 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-[70vh] bg-slate-50/50">
+      <div className="size-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
     </div>
   )
 
-  const { profile, totalPoints, maxStreak, level, upcomingEvents, recommendedEvents, myGroups, friendActivity, suggestedPeople } = data
-  const firstName = profile?.full_name?.split(" ")[0] || "there"
+  const { profile, totalPoints, maxStreak, level, upcomingEvents, recommendedEvents, myGroups, friendActivity } = data
+  const firstName = profile?.full_name?.split(" ")[0] || "Athlete"
   
   return (
-    <div className="w-full min-h-screen bg-stone-50/50 dark:bg-background pb-20">
+    <div className="w-full min-h-screen bg-slate-50/50 pb-32 font-sans">
       
-      {/* ── HERO ── */}
-      <div className="w-full bg-white dark:bg-zinc-950 border-b px-6 pt-10 pb-8">
-        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+      {/* ── BOLD HERO SECTION (Greeny-Bluey Gradient) ── */}
+      <div className="relative w-full bg-gradient-to-br from-cyan-800 via-teal-600 to-emerald-500 text-white pt-24 pb-48 px-8 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+          <div className="absolute -top-[20%] -right-[10%] w-[60%] h-[120%] rounded-full bg-gradient-to-l from-white to-transparent blur-3xl rotate-12" />
+          <div className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[100%] rounded-full bg-gradient-to-t from-emerald-400 to-transparent blur-3xl -rotate-12" />
+        </div>
+
+        <div className="mx-auto max-w-7xl relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div>
-            <h1 className="text-3xl font-black tracking-tight">Good to see you, {firstName} 👋</h1>
-            <p className="text-muted-foreground mt-1 text-base">Here's what's happening in your community today.</p>
+            <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4">Let's go, {firstName}.</h1>
+            <p className="text-teal-50 text-xl max-w-lg leading-relaxed">Find your next challenge, connect with your crew, and track your progress.</p>
           </div>
-          <div className="flex gap-3 shrink-0">
-            <Link href="/events" className="flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">
-              <Calendar className="size-4" /> Find Events
+          <div className="flex items-center gap-4">
+            <Link href="/events" className="flex items-center gap-2 rounded-full bg-white text-teal-900 px-8 py-4 text-base font-black hover:scale-105 hover:shadow-xl transition-all duration-300">
+              <Calendar className="size-5" /> Find Events
+            </Link>
+            <Link href="/log" className="flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 px-8 py-4 text-base font-bold hover:bg-white/30 transition-all duration-300">
+              <Plus className="size-5" /> Log Activity
             </Link>
           </div>
         </div>
       </div>
 
-      {/* ── MAIN DASHBOARD LAYOUT ── */}
-      <div className="mx-auto max-w-7xl px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+      {/* ── MAIN CONTENT ── */}
+      <div className="mx-auto max-w-7xl px-6 sm:px-8 -mt-24 relative z-20">
         
-        {/* LEFT COLUMN: Discovery & Groups (Span 8) */}
-        <div className="lg:col-span-8 space-y-12">
-          
-          {/* Upcoming Events Pill Strip */}
-          {upcomingEvents.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Your Schedule</h3>
-              <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-                {upcomingEvents.map((reg) => (
-                  <Link key={reg.id} href={`/events/${reg.event.id}`}
-                    className={`flex items-center gap-3 rounded-full px-5 py-2.5 text-sm font-medium shrink-0 border hover:shadow-md transition-all bg-white dark:bg-zinc-900 ${isToday(new Date(reg.event.date)) ? "border-green-300 text-green-700 dark:text-green-400" : "border-border"}`}>
-                    <span className={`size-2.5 rounded-full shrink-0 ${isToday(new Date(reg.event.date)) ? "bg-green-500 animate-pulse" : "bg-foreground/20"}`} />
-                    <span className="truncate max-w-[160px]">{reg.event.title}</span>
-                    <span className="text-xs text-muted-foreground shrink-0 border-l pl-3 ml-1">{formatEventDate(reg.event.date)}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+        {/* Floating Profile/Stats Bar */}
+        <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-xl shadow-teal-900/5 flex flex-wrap items-center justify-between gap-6 border border-white/50 backdrop-blur-xl mb-12 lg:mb-16">
+           <div className="flex items-center gap-5">
+             <div className="size-16 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 p-1 shadow-md">
+               <div className="size-full rounded-full bg-white overflow-hidden flex items-center justify-center">
+                 {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="size-full object-cover" /> : <User className="size-7 text-teal-300" />}
+               </div>
+             </div>
+             <div>
+               <h2 className="font-bold text-slate-800 text-xl">{profile?.full_name || "Adventurer"}</h2>
+               <p className="text-base font-medium text-slate-500 mt-1">{profile?.location || "Active locally"}</p>
+             </div>
+           </div>
 
-          {/* Recommended Events (Asymmetric Grid kept from original, slightly restyled) */}
-          {recommendedEvents.length > 0 && (
-            <section>
-              <div className="flex items-end justify-between mb-6">
-                <h2 className="text-2xl font-black tracking-tight">Events you might love</h2>
-                <Link href="/events" className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors">
-                  See all <ArrowRight className="size-4" />
-                </Link>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Hero Event */}
-                {recommendedEvents[0] && (
-                  <Link href={`/events/${recommendedEvents[0].id}`} className="md:col-span-2 group relative rounded-3xl overflow-hidden bg-stone-200 hover:shadow-xl transition-all duration-300 min-h-[300px] block">
-                    {recommendedEvents[0].image ? <img src={recommendedEvents[0].image} className="absolute inset-0 size-full object-cover group-hover:scale-105 transition-transform duration-700" alt="" /> : <div className="absolute inset-0 flex items-center justify-center text-7xl bg-gradient-to-br from-orange-100 to-rose-100">🎯</div>}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                      <span className="inline-block rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-semibold mb-3">{formatEventDate(recommendedEvents[0].date)}</span>
-                      <h3 className="text-2xl font-black leading-tight mb-2">{recommendedEvents[0].title}</h3>
-                      <p className="flex items-center gap-1 text-white/80 text-sm"><MapPin className="size-4" /> {recommendedEvents[0].location}</p>
-                    </div>
+           <div className="flex items-center gap-8 sm:gap-12 text-sm">
+             <div className="flex flex-col items-center sm:items-start">
+               <span className="text-slate-400 font-medium text-xs uppercase tracking-widest mb-1">Level</span>
+               <span className="font-black text-teal-600 text-2xl">{level?.level || 1}</span>
+             </div>
+             <div className="h-10 w-px bg-slate-200" />
+             <div className="flex flex-col items-center sm:items-start">
+               <span className="text-slate-400 font-medium text-xs uppercase tracking-widest mb-1">Points</span>
+               <span className="font-black text-slate-800 text-2xl">{totalPoints.toLocaleString()}</span>
+             </div>
+             {maxStreak > 0 && (
+               <>
+                 <div className="h-10 w-px bg-slate-200 hidden sm:block" />
+                 <div className="flex flex-col items-center sm:items-start hidden sm:flex">
+                   <span className="text-slate-400 font-medium text-xs uppercase tracking-widest mb-1">Streak</span>
+                   <span className="font-black text-orange-500 text-2xl flex items-center gap-1.5">{maxStreak}w <Flame className="size-5" fill="currentColor"/></span>
+                 </div>
+               </>
+             )}
+           </div>
+        </div>
+
+        {/* ── TWO COLUMN BENTO GRID ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+          
+          {/* LEFT/CENTER: Events & Groups */}
+          <div className="lg:col-span-8 space-y-16 lg:space-y-20">
+            
+            {/* UPCOMING EVENTS (Your Schedule) */}
+            {upcomingEvents.length > 0 && (
+              <section>
+                <div className="flex items-end justify-between mb-6 px-2">
+                  <h3 className="text-3xl font-black text-slate-800 tracking-tight">Your Schedule</h3>
+                  <Link href="/profile?tab=schedule" className="text-base font-bold text-teal-600 hover:text-teal-800 flex items-center gap-1.5 transition-colors mb-1">
+                    Manage <ArrowRight className="size-4" />
                   </Link>
-                )}
-                {/* Side Stack */}
-                <div className="flex flex-col gap-4">
-                  {recommendedEvents.slice(1, 3).map((event) => (
-                    <Link key={event.id} href={`/events/${event.id}`} className="group flex-1 relative rounded-3xl overflow-hidden bg-stone-200 hover:shadow-lg transition-all min-h-[142px] block">
-                       {event.image ? <img src={event.image} className="absolute inset-0 size-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" /> : <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-indigo-100"></div>}
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                       <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                         <h4 className="text-sm font-bold line-clamp-1 mb-1">{event.title}</h4>
-                         <p className="text-xs text-white/70">{formatEventDate(event.date)}</p>
-                       </div>
+                </div>
+                <div className="flex gap-6 overflow-x-auto pb-6 pt-2 px-2 -mx-2" style={{ scrollbarWidth: "none" }}>
+                  {upcomingEvents.map((reg) => (
+                    <Link key={reg.id} href={`/events/${reg.event.id}`} className="flex flex-col justify-between bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 min-w-[280px] sm:min-w-[320px] shrink-0 group">
+                      <div className="flex items-start justify-between mb-6">
+                        <span className={`text-sm font-black uppercase tracking-wider px-3 py-1.5 rounded-lg ${isToday(new Date(reg.event.date)) ? 'bg-lime-100 text-lime-800' : 'bg-teal-50 text-teal-700'}`}>
+                          {formatEventDate(reg.event.date)}
+                        </span>
+                        <CheckCircle2 className="size-6 text-emerald-500 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-lg line-clamp-2 leading-tight">{reg.event.title}</h4>
+                        <p className="text-base text-slate-500 flex items-center gap-1.5 mt-2"><MapPin className="size-4" /> {reg.event.location}</p>
+                      </div>
                     </Link>
                   ))}
                 </div>
-              </div>
-            </section>
-          )}
+              </section>
+            )}
 
-          {/* Groups */}
-          <section>
-             <div className="flex items-end justify-between mb-6">
-                <h2 className="text-2xl font-black tracking-tight">Your Groups</h2>
-                <Link href="/community" className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors">
+            {/* RECOMMENDED EVENTS */}
+            <section>
+              <div className="flex items-end justify-between mb-8 px-2">
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight">Recommended events</h3>
+                <Link href="/events" className="text-base font-bold text-teal-600 hover:text-teal-800 flex items-center gap-1.5 transition-colors mb-1">
+                  View All <ArrowRight className="size-4" />
+                </Link>
+              </div>
+
+              {recommendedEvents.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+                  {/* Hero Event Card */}
+                  {recommendedEvents[0] && (
+                    <Link href={`/events/${recommendedEvents[0].id}`} className="sm:col-span-2 group relative rounded-[2rem] overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 min-h-[340px] flex items-end">
+                      {recommendedEvents[0].image 
+                        ? <img src={recommendedEvents[0].image} className="absolute inset-0 size-full object-cover group-hover:scale-105 transition-transform duration-700" alt="" /> 
+                        : <div className="absolute inset-0 bg-gradient-to-br from-teal-500 to-emerald-500"></div>
+                      }
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
+                      <div className="relative z-10 p-8 md:p-10 w-full">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="bg-lime-400 text-slate-900 px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest">{formatEventDate(recommendedEvents[0].date)}</span>
+                          {recommendedEvents[0].category_id && <span className="bg-white/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-sm font-bold">{recommendedEvents[0].category_id}</span>}
+                        </div>
+                        <h4 className="text-4xl font-black text-white leading-tight mb-3">{recommendedEvents[0].title}</h4>
+                        <p className="flex items-center gap-2 text-slate-200 text-base font-medium"><MapPin className="size-5" /> {recommendedEvents[0].location}</p>
+                      </div>
+                    </Link>
+                  )}
+                  {/* Smaller Cards */}
+                  {recommendedEvents.slice(1, 3).map((event) => (
+                    <Link key={event.id} href={`/events/${event.id}`} className="group relative rounded-[2rem] overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 min-h-[220px] flex items-end">
+                      {event.image 
+                        ? <img src={event.image} className="absolute inset-0 size-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" /> 
+                        : <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-teal-500"></div>
+                      }
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent" />
+                      <div className="relative z-10 p-6 sm:p-8 w-full">
+                        <span className="text-cyan-300 text-sm font-black uppercase tracking-widest block mb-2">{formatEventDate(event.date)}</span>
+                        <h4 className="text-xl font-bold text-white leading-snug line-clamp-2">{event.title}</h4>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-[2rem] p-12 text-center shadow-sm">
+                  <p className="text-slate-500 font-medium text-lg">No new recommendations right now. Try updating your location and interests!</p>
+                </div>
+              )}
+            </section>
+
+            {/* YOUR COMMUNITY */}
+            <section>
+               <div className="flex items-end justify-between mb-8 px-2">
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight">Your community</h3>
+                <Link href="/community" className="text-base font-bold text-teal-600 hover:text-teal-800 flex items-center gap-1.5 transition-colors mb-1">
                   Explore <ArrowRight className="size-4" />
                 </Link>
               </div>
-              
+
               {myGroups.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-stone-300 bg-stone-50 p-10 text-center">
-                  <p className="text-lg font-bold mb-2">You haven't joined any groups yet</p>
-                  <p className="text-muted-foreground text-sm mb-4">Find communities that share your interests.</p>
-                  <Link href="/community" className="inline-flex items-center gap-2 rounded-full bg-white border px-5 py-2 text-sm font-semibold hover:bg-stone-50">
-                    Browse Groups
+                <div className="rounded-[2rem] bg-teal-50/50 border-2 border-dashed border-teal-200 p-12 text-center">
+                  <p className="text-xl font-black text-teal-900 mb-2">Go solo or find a crew?</p>
+                  <p className="text-teal-700/70 text-base mb-6">Join communities that share your passion.</p>
+                  <Link href="/community" className="inline-flex items-center gap-2 rounded-full bg-teal-600 text-white px-8 py-3 text-base font-bold hover:bg-teal-700 shadow-md hover:shadow-lg transition-all">
+                    Browse communities
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {myGroups.map((group: any) => (
-                    <Link key={group.id} href={`/community/${group.id}`} className="flex items-center gap-4 rounded-2xl bg-white dark:bg-zinc-900 border p-3 hover:shadow-md transition-all group">
-                       <div className="size-16 rounded-xl bg-sky-100 shrink-0 overflow-hidden">
-                         {group.image ? <img src={group.image} alt="" className="size-full object-cover" /> : <div className="size-full flex items-center justify-center text-xl">👥</div>}
-                       </div>
-                       <div className="flex-1 min-w-0">
-                         <h4 className="font-bold text-base truncate">{group.name}</h4>
-                         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5"><Users className="size-3" /> {group.member_count || 0} members</p>
-                       </div>
-                       <div className="size-8 rounded-full bg-stone-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-sky-100 group-hover:text-sky-600 transition-colors shrink-0 mr-2">
-                         <ChevronRight className="size-4" />
-                       </div>
+                    <Link key={group.id} href={`/community/${group.id}`} className="group flex items-center gap-5 bg-white rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-transparent hover:border-teal-100">
+                      <div className="size-20 rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-teal-100 to-emerald-100">
+                        {group.image ? <img src={group.image} alt="" className="size-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="size-full flex items-center justify-center text-3xl">⚡️</div>}
+                      </div>
+                      <div className="flex-1 min-w-0 pr-2">
+                        <h4 className="font-black text-slate-800 text-lg truncate group-hover:text-teal-600 transition-colors">{group.name}</h4>
+                        <p className="text-base text-slate-500 font-medium flex items-center gap-1.5 mt-1"><Users className="size-4" /> {group.member_count || 0} members</p>
+                      </div>
                     </Link>
                   ))}
                 </div>
               )}
-          </section>
-
-        </div>
-
-        {/* RIGHT COLUMN: Community Pulse & Subtle Stats (Span 4) */}
-        <div className="lg:col-span-4 space-y-8">
-          
-          {/* Subtle Profile/Stats Card */}
-          <div className="rounded-3xl bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/30 dark:to-indigo-950/30 border border-sky-100 dark:border-sky-900 p-5 flex items-center gap-4">
-            <div className="size-12 rounded-full bg-white dark:bg-zinc-800 shadow-sm overflow-hidden flex items-center justify-center shrink-0 border border-white">
-              {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="size-full object-cover" /> : <User className="size-5 text-muted-foreground" />}
-            </div>
-            <div className="flex-1">
-              <p className="font-bold">{profile?.full_name || "Adventurer"}</p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-medium"><Sparkles className="size-3" /> Level {level?.level || 1}</span>
-                <span>•</span>
-                <span>{totalPoints.toLocaleString()} pts</span>
-                {maxStreak > 2 && (
-                  <>
-                    <span>•</span>
-                    <span className="text-orange-500 font-medium">{maxStreak}w 🔥</span>
-                  </>
-                )}
-              </div>
-            </div>
+            </section>
           </div>
 
-          {/* Friend Activity Feed */}
-          <div className="rounded-3xl bg-white dark:bg-zinc-900 border p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Activity className="size-5 text-sky-500" />
-              <h3 className="font-black text-lg">Community Pulse</h3>
-            </div>
-            
-            {friendActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">It's quiet here. Follow more people to see what they're up to!</p>
-            ) : (
-              <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-stone-200 dark:before:via-zinc-800 before:to-transparent">
-                {friendActivity.map((item, i) => (
-                  <div key={i} className="relative flex items-start gap-4 group">
-                    <Link href={`/profile/${item.userId}`} className="relative z-10 shrink-0 mt-1">
-                      <div className="size-10 rounded-full bg-white dark:bg-zinc-900 border-2 border-white dark:border-zinc-900 shadow-sm overflow-hidden flex items-center justify-center ring-2 ring-stone-100 dark:ring-zinc-800 group-hover:ring-sky-200 transition-all">
-                        {item.profile?.avatar_url ? <img src={item.profile.avatar_url} alt="" className="size-full object-cover" /> : <User className="size-4 text-muted-foreground" />}
-                      </div>
-                    </Link>
-                    <div className="flex-1 min-w-0 pt-1">
-                      <p className="text-sm leading-snug">
-                        <Link href={`/profile/${item.userId}`} className="font-bold hover:text-sky-600 transition-colors">{item.profile?.full_name || "Someone"}</Link>
-                        <span className="text-muted-foreground ml-1">
-                          {item.type === "log" ? `logged a ${item.data.activity_type.toLowerCase()}${item.data.distance ? ` · ${item.data.distance}km` : ""}` : item.data.events ? `registered for ${item.data.events.title}` : ""}
-                        </span>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">{format(new Date(item.timestamp), "MMM d · h:mm a")}</p>
-                    </div>
+          {/* RIGHT SIDEBAR: The Pulse */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 sticky top-8">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="size-10 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center">
+                  <Activity className="size-5" />
+                </div>
+                <h3 className="font-black text-2xl text-slate-800">The Pulse</h3>
+              </div>
+
+              {friendActivity.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="size-20 rounded-full bg-slate-50 mx-auto flex items-center justify-center mb-4">
+                    <User className="size-8 text-slate-300" />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Suggested People */}
-          {suggestedPeople.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 px-1">Suggested Connections</h3>
-              <div className="space-y-2">
-                {suggestedPeople.map(person => (
-                  <Link key={person.id} href={`/profile/${person.id}`} className="flex items-center gap-3 rounded-2xl hover:bg-white dark:hover:bg-zinc-900 px-3 py-2.5 transition-colors group">
-                    <div className="size-10 rounded-full bg-stone-200 dark:bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                      {person.avatar_url ? <img src={person.avatar_url} alt="" className="size-full object-cover" /> : <User className="size-4 text-muted-foreground" />}
+                  <p className="text-base font-medium text-slate-500 leading-relaxed">It's quiet here. Follow athletes to see their activity!</p>
+                </div>
+              ) : (
+                <div className="space-y-8 relative before:absolute before:inset-0 before:ml-[1.35rem] before:-translate-x-px before:h-full before:w-[2px] before:bg-gradient-to-b before:from-teal-100 before:to-transparent">
+                  {friendActivity.map((item, i) => (
+                    <div key={i} className="relative flex items-start gap-5 group">
+                      <Link href={`/profile/${item.userId}`} className="relative z-10 shrink-0 mt-1">
+                        <div className="size-11 rounded-full bg-white border-4 border-white shadow-sm overflow-hidden flex items-center justify-center ring-1 ring-slate-100 group-hover:ring-teal-300 transition-all">
+                          {item.profile?.avatar_url ? <img src={item.profile.avatar_url} alt="" className="size-full object-cover" /> : <User className="size-5 text-slate-400" />}
+                        </div>
+                      </Link>
+                      <div className="flex-1 min-w-0 pt-1.5">
+                        <p className="text-base text-slate-700 leading-relaxed">
+                          <Link href={`/profile/${item.userId}`} className="font-bold text-slate-900 hover:text-teal-600 transition-colors">{item.profile?.full_name || "Someone"}</Link>
+                          <span className="ml-1.5 font-medium text-slate-500">
+                            {item.type === "log" ? `crushed a ${item.data.activity_type.toLowerCase()} workout${item.data.distance ? ` (${item.data.distance}km)` : ""}` : item.data.events ? `is going to ${item.data.events.title}` : ""}
+                          </span>
+                        </p>
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-2">{format(new Date(item.timestamp), "MMM d · h:mm a")}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate group-hover:text-sky-600 transition-colors">{person.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{person.location || "Active nearby"}</p>
-                    </div>
-                    <div className="size-8 rounded-full border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-muted-foreground group-hover:bg-foreground group-hover:text-background group-hover:border-foreground transition-all shrink-0">
-                      <User className="size-3.5" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
         </div>
       </div>

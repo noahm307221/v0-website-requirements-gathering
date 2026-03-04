@@ -120,6 +120,7 @@
     @apply border-border outline-ring/50;
   }
   body {
+    background-color: #f8fafc; /* Just a clean, soft slate-50 */
     @apply bg-background text-foreground;
   }
 }

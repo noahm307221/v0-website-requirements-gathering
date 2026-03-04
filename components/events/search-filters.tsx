@@ -1,8 +1,6 @@
 "use client"
 
-import { Search, SlidersHorizontal, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { SlidersHorizontal, X } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -10,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { categories } from "@/lib/data"
 import { cn } from "@/lib/utils"
 
@@ -22,93 +19,89 @@ interface SearchFiltersProps {
   sortBy: string
   onSortChange: (value: string) => void
   resultCount: number
+  onClearAll?: () => void
+  hasActiveFilters: boolean // Added this to perfectly track all filter states
 }
 
 export function SearchFilters({
-  search,
-  onSearchChange,
   selectedCategory,
   onCategoryChange,
   sortBy,
   onSortChange,
   resultCount,
+  onClearAll,
+  hasActiveFilters
 }: SearchFiltersProps) {
-  const hasFilters = search !== "" || selectedCategory !== "all"
-
-  function clearFilters() {
-    onSearchChange("")
-    onCategoryChange("all")
-  }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Search bar + sort */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search events, locations..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={sortBy} onValueChange={onSortChange}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SlidersHorizontal className="size-4 text-muted-foreground" />
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="date">Soonest first</SelectItem>
-            <SelectItem value="spots">Most spots left</SelectItem>
-            <SelectItem value="popular">Most popular</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Category filter pills */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => onCategoryChange("all")}
-          className={cn(
-            "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-            selectedCategory === "all"
-              ? "border-foreground bg-foreground text-background"
-              : "border-border/60 bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground",
-          )}
-        >
-          All
-        </button>
-        {categories.map((cat) => (
+    <div className="flex flex-col gap-6 pt-5 border-t border-slate-100 mt-2">
+      
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        
+        {/* Category filter pills - Made smaller and more compact */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            key={cat.id}
-            onClick={() =>
-              onCategoryChange(selectedCategory === cat.id ? "all" : cat.id)
-            }
+            onClick={() => onCategoryChange("all")}
             className={cn(
-              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-              selectedCategory === cat.id
-                ? "border-foreground bg-foreground text-background"
-                : "border-border/60 bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground",
+              "rounded-full px-4 py-1.5 text-xs font-bold capitalize transition-all shadow-sm",
+              selectedCategory === "all"
+                ? "bg-teal-600 text-white shadow-md scale-105"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50"
             )}
           >
-            {cat.name}
+            All
           </button>
-        ))}
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() =>
+                onCategoryChange(selectedCategory === cat.id ? "all" : cat.id)
+              }
+              className={cn(
+                "rounded-full px-4 py-1.5 text-xs font-bold capitalize transition-all shadow-sm",
+                selectedCategory === cat.id
+                  ? "bg-teal-600 text-white shadow-md scale-105"
+                  : "bg-white border border-slate-200 text-slate-500 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50"
+              )}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Sort Dropdown */}
+        <Select value={sortBy} onValueChange={onSortChange}>
+          <SelectTrigger className="h-10 w-full lg:w-48 rounded-xl bg-white border border-slate-200 shadow-sm px-4 text-sm font-bold text-slate-700 hover:border-teal-300 transition-all focus:ring-4 focus:ring-teal-50 focus:border-teal-400 focus:outline-none">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="size-4 text-teal-600" />
+              <SelectValue placeholder="Sort by" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl border-slate-100 shadow-xl p-2">
+            <SelectItem value="date" className="rounded-xl focus:bg-teal-50 focus:text-teal-800 cursor-pointer font-bold py-2">Soonest first</SelectItem>
+            <SelectItem value="spots" className="rounded-xl focus:bg-teal-50 focus:text-teal-800 cursor-pointer font-bold py-2">Most spots left</SelectItem>
+            <SelectItem value="popular" className="rounded-xl focus:bg-teal-50 focus:text-teal-800 cursor-pointer font-bold py-2">Most popular</SelectItem>
+          </SelectContent>
+        </Select>
+
       </div>
 
-      {/* Active filter info */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+      {/* Active filter info & Global Clear (Only shows if filters are actually applied) */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
           {resultCount} {resultCount === 1 ? "event" : "events"} found
         </p>
-        {hasFilters && (
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={clearFilters}>
-            <X className="size-3.5" />
-            Clear filters
-          </Button>
+        {hasActiveFilters && onClearAll && (
+          <button 
+            onClick={onClearAll}
+            className="flex items-center gap-1.5 text-sm font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-full transition-colors"
+          >
+            <X className="size-4" />
+            Clear all filters
+          </button>
         )}
       </div>
+      
     </div>
   )
 }
