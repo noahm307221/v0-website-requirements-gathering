@@ -167,6 +167,13 @@ export default function EventDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border p-4">
+          <Clock className="size-5 text-muted-foreground" />
+          <div>
+            <p className="text-xs text-muted-foreground">Duration</p>
+            <p className="font-medium">{event.duration || "See event details"}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border p-4">
           <MapPin className="size-5 text-muted-foreground" />
           <div>
             <p className="text-xs text-muted-foreground">Location</p>

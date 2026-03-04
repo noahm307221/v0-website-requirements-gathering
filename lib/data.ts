@@ -12,6 +12,7 @@ export type Event = {
   categoryId: string
   date: string
   time: string
+  duration?: string
   location: string
   address: string
   spotsTotal: number

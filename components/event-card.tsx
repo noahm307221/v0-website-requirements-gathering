@@ -73,6 +73,12 @@ export function EventCard({ event, className }: EventCardProps) {
               <span className="text-border">|</span>
               <Clock className="size-3.5 shrink-0" />
               <span>{event.time}</span>
+              {event.duration && (
+                <>
+                  <span className="text-border">|</span>
+                  <span>{event.duration}</span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="size-3.5 shrink-0" />

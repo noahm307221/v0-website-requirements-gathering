@@ -15,6 +15,7 @@ export default function AdminPage() {
     category_id: "",
     date: "",
     time: "",
+    duration: "", // add this
     location: "",
     address: "",
     spots_total: "",
@@ -115,7 +116,7 @@ export default function AdminPage() {
       setFormError("")
       setForm({
         title: "", description: "", category_id: "", date: "",
-        time: "", location: "", address: "", spots_total: "",
+        time: "", duration: "", location: "", address: "", spots_total: "",
         spots_taken: "0", organiser: "", price: "", image: "",
       })
       fetchEvents()
@@ -151,6 +152,7 @@ export default function AdminPage() {
             { key: "title", label: "Title" },
             { key: "category_id", label: "Category (e.g. running, yoga)" },
             { key: "time", label: "Time (e.g. 09:00)" },
+            { key: "duration", label: "Duration (e.g. 1 hour, 90 mins)" },
             { key: "location", label: "Location Name" },
             { key: "address", label: "Full Address (include street, city & postcode for location search)" },
             { key: "organiser", label: "Organiser" },
