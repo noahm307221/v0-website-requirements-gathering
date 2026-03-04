@@ -68,7 +68,15 @@ export function EventsContent() {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
           )
           const data = await res.json()
-          const city = data.address?.city || data.address?.town || data.address?.village || "Your location"
+          const city =
+            data.address?.suburb ||
+            data.address?.neighbourhood ||
+            data.address?.quarter ||
+            data.address?.village ||
+            data.address?.town ||
+            data.address?.municipality ||
+            data.address?.city ||
+            "Your location"
           setLocationLabel(city)
           setLocationInput(city)
         } catch {
