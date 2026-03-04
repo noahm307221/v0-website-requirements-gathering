@@ -20,6 +20,7 @@ import { supabase, isAdmin } from "@/lib/supabase"
 const navLinks = [
   { href: "/events", label: "Events" },
   { href: "/community", label: "Community" },
+  { href: "/compete", label: "Compete" },
   { href: "/#how-it-works", label: "How It Works" },
   { href: "/#contact", label: "Contact" },
 ]
