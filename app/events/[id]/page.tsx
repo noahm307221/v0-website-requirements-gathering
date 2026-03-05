@@ -6,6 +6,7 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { format, isToday, isTomorrow } from "date-fns"
 import { Calendar, Clock, MapPin, Users, ArrowLeft, CheckCircle2, Ticket, Share2 } from "lucide-react"
+import { sendEventRegistrationEmail } from "@/lib/email"
 
 function formatEventDate(dateStr: string) {
   const d = new Date(dateStr)
@@ -70,6 +71,7 @@ export default function EventDetailsPage() {
     if (isRegistered) {
       // Cancel RSVP
       await supabase.from("registrations").delete().match({ event_id: eventId, user_id: user.id })
+      await sendEventRegistrationEmail(user.email, event.title, format(new Date(event.date), "EEEE d MMMM yyyy"), event.location, event.id)
       await supabase.rpc('decrement_spots_taken', { event_id: eventId }) // Assuming you have this RPC, or you can update the row
       setIsRegistered(false)
       setEvent({ ...event, spots_taken: Math.max(0, event.spots_taken - 1) })
