@@ -27,6 +27,7 @@ const navLinks = [
   { href: "/events", label: "Events" },
   { href: "/community", label: "Community" },
   { href: "/compete", label: "Compete" },
+  { href: "/compete/leagues/create", label: "Create League" },
 ]
 
 export function Navbar() {

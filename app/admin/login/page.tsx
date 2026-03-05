@@ -26,8 +26,13 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm rounded-2xl border p-8">
+    <div className="relative flex min-h-screen items-center justify-center px-6">
+      {/* Warm ambient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50 pointer-events-none z-0" />
+      <div className="absolute top-[-10%] right-[-5%] w-[700px] h-[700px] rounded-full bg-teal-100/40 blur-[100px] pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-orange-100/40 blur-[100px] pointer-events-none z-0" />
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="rounded-2xl border p-8 bg-white/80 backdrop-blur">
         <h1 className="text-2xl font-bold mb-1">Admin Login</h1>
         <p className="text-sm text-muted-foreground mb-6">Sign in to manage events</p>
 
@@ -61,6 +66,7 @@ export default function AdminLoginPage() {
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
+        </div>
         </div>
       </div>
     </div>

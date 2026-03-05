@@ -115,10 +115,19 @@ export default function LeaguesPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
-      <div className="mb-10">
-        <p className="mb-3 text-[0.8rem] font-medium uppercase tracking-widest text-muted-foreground">Compete</p>
-        <h1 className="text-3xl font-bold tracking-tight">My <span className="font-serif italic text-accent">Leagues</span></h1>
-        <p className="mt-3 text-muted-foreground">Create private leagues with friends and track your head-to-head results.</p>
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="mb-3 text-[0.8rem] font-medium uppercase tracking-widest text-muted-foreground">Compete</p>
+          <h1 className="text-3xl font-bold tracking-tight inline-block">My <span className="font-serif italic text-accent">Leagues</span></h1>
+          <p className="mt-3 text-muted-foreground">Create private leagues with friends and track your head-to-head results.</p>
+        </div>
+        <Link 
+          href="/compete/leagues/create" 
+          className="flex items-center gap-2 rounded-full bg-teal-600 text-white px-6 py-3 text-sm font-bold shadow-md hover:bg-teal-700 hover:-translate-y-0.5 transition-all"
+        >
+          <Plus className="size-4" />
+          Create League
+        </Link>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-6 mb-10">

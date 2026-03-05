@@ -4,17 +4,29 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { calculateActivityPoints, getCurrentWeek, getCurrentMonth, getCurrentYear, BADGES } from "@/lib/points"
+import { ArrowLeft, Activity, MapPin, Clock, FileText, CheckCircle2, Medal, Zap, Trophy, Users } from "lucide-react"
 
-const ACTIVITIES = ["running", "cycling", "swimming", "hiking", "crossfit", "padel", "tennis", "yoga"]
-const MATCH_ACTIVITIES = ["padel", "tennis"]
+const SPORTS = [
+  { id: "running", label: "Running", emoji: "🏃", type: "manual" },
+  { id: "cycling", label: "Cycling", emoji: "🚴", type: "manual" },
+  { id: "swimming", label: "Swimming", emoji: "🏊", type: "manual" },
+  { id: "padel", label: "Padel", emoji: "🎾", type: "match" },
+  { id: "tennis", label: "Tennis", emoji: "🎾", type: "match" },
+  { id: "crossfit", label: "CrossFit", emoji: "🏋️", type: "manual" },
+  { id: "yoga", label: "Yoga", emoji: "🧘", type: "manual" },
+  { id: "hiking", label: "Hiking", emoji: "🥾", type: "manual" },
+]
 
 export default function LogActivityPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState("")
-  const [error, setError] = useState("")
-  const [logType, setLogType] = useState<"manual" | "match">("manual")
+  const [successMsg, setSuccessMsg] = useState("")
+  
+  // Data for matches
+  const [friends, setFriends] = useState<any[]>([])
+  const [leagues, setLeagues] = useState<any[]>([])
+
   const [form, setForm] = useState({
     activity_type: "running",
     distance: "",
@@ -25,8 +37,10 @@ export default function LogActivityPage() {
     won: true,
     league_id: "",
   })
-  const [friends, setFriends] = useState<any[]>([])
-  const [leagues, setLeagues] = useState<any[]>([])
+
+  // Derived state for UI
+  const selectedSportObj = SPORTS.find(s => s.id === form.activity_type)
+  const isMatch = selectedSportObj?.type === "match"
 
   useEffect(() => {
     async function load() {
@@ -58,14 +72,13 @@ export default function LogActivityPage() {
       setFriends(profiles || [])
     }
     load()
-  }, [])
+  }, [router])
 
-  async function handleLog() {
-    setError("")
-    setSuccess("")
-    if (!form.activity_type) return setError("Please select an activity")
-
+  async function handleLog(e: React.FormEvent) {
+    e.preventDefault()
     setLoading(true)
+
+    const logType = isMatch ? "match" : "manual"
 
     const points = calculateActivityPoints(
       form.activity_type,
@@ -76,7 +89,7 @@ export default function LogActivityPage() {
 
     const now = new Date().toISOString()
 
-    // Log the activity
+    // 1. Log the activity
     await supabase.from("activity_logs").insert([{
       id: crypto.randomUUID(),
       user_id: user.id,
@@ -89,7 +102,7 @@ export default function LogActivityPage() {
       logged_at: now,
     }])
 
-    // Log match result if applicable
+    // 2. Log match result if applicable
     if (logType === "match" && form.opponent_id) {
       await supabase.from("match_results").insert([{
         id: crypto.randomUUID(),
@@ -104,7 +117,7 @@ export default function LogActivityPage() {
 
       // Update opponent points too
       const opponentPoints = calculateActivityPoints(form.activity_type, form.won ? "match_loss" : "match_win")
-      await updateUserStats(form.opponent_id, form.activity_type, opponentPoints, logType === "match")
+      await updateUserStats(form.opponent_id, form.activity_type, opponentPoints, true)
 
       // Update league member points if in a league
       if (form.league_id) {
@@ -113,23 +126,26 @@ export default function LogActivityPage() {
       }
     }
 
-    // Update user stats
+    // 3. Update user stats
     await updateUserStats(user.id, form.activity_type, points, logType === "match")
 
-    // Check and award badges
+    // 4. Check and award badges
     await checkBadges(user.id)
 
-    setSuccess(`Activity logged! You earned ${points} points 🎉`)
-    setLoading(false)
-    setForm({ activity_type: "running", distance: "", duration_mins: "", notes: "", opponent_id: "", score: "", won: true, league_id: "" })
+    setSuccessMsg(`Activity logged! You earned ${points} points 🎉`)
+    
+    // Redirect after brief delay
+    setTimeout(() => {
+      router.push("/compete")
+    }, 2000)
   }
 
-  async function updateUserStats(userId: string, activityType: string, points: number, isMatch: boolean) {
+  // --- Backend Logic Helpers ---
+  async function updateUserStats(userId: string, activityType: string, points: number, isMatchSport: boolean) {
     const month = getCurrentMonth()
     const year = getCurrentYear()
     const week = getCurrentWeek()
 
-    // Check existing stats
     const { data: existing } = await supabase
       .from("user_stats")
       .select("*")
@@ -144,9 +160,9 @@ export default function LogActivityPage() {
 
       await supabase.from("user_stats").update({
         total_points: (existing.total_points || 0) + points,
-        events_attended: isMatch ? existing.events_attended : (existing.events_attended || 0) + 1,
-        matches_played: isMatch ? (existing.matches_played || 0) + 1 : existing.matches_played,
-        matches_won: (isMatch && form.won) ? (existing.matches_won || 0) + 1 : existing.matches_won,
+        events_attended: isMatchSport ? existing.events_attended : (existing.events_attended || 0) + 1,
+        matches_played: isMatchSport ? (existing.matches_played || 0) + 1 : existing.matches_played,
+        matches_won: (isMatchSport && form.won) ? (existing.matches_won || 0) + 1 : existing.matches_won,
         streak_weeks: newStreak,
         last_active_week: week,
         month,
@@ -158,9 +174,9 @@ export default function LogActivityPage() {
         user_id: userId,
         activity_type: activityType,
         total_points: points,
-        events_attended: isMatch ? 0 : 1,
-        matches_played: isMatch ? 1 : 0,
-        matches_won: (isMatch && form.won) ? 1 : 0,
+        events_attended: isMatchSport ? 0 : 1,
+        matches_played: isMatchSport ? 1 : 0,
+        matches_won: (isMatchSport && form.won) ? 1 : 0,
         streak_weeks: 1,
         last_active_week: week,
         month,
@@ -187,26 +203,15 @@ export default function LogActivityPage() {
   }
 
   async function checkBadges(userId: string) {
-    const { data: existing } = await supabase
-      .from("user_badges")
-      .select("badge_id")
-      .eq("user_id", userId)
-
+    const { data: existing } = await supabase.from("user_badges").select("badge_id").eq("user_id", userId)
     const earnedIds = new Set(existing?.map(b => b.badge_id) || [])
-    const { data: logs } = await supabase
-      .from("activity_logs")
-      .select("*")
-      .eq("user_id", userId)
-
-    const { data: wins } = await supabase
-      .from("match_results")
-      .select("*")
-      .eq("winner_id", userId)
+    
+    const { data: logs } = await supabase.from("activity_logs").select("*").eq("user_id", userId)
+    const { data: wins } = await supabase.from("match_results").select("*").eq("winner_id", userId)
 
     const totalEvents = logs?.filter(l => l.log_type === "manual" || l.log_type === "event").length || 0
     const totalWins = wins?.length || 0
     const activityTypes = new Set(logs?.map(l => l.activity_type) || [])
-    const locations = new Set(logs?.map(l => l.notes).filter(Boolean) || [])
 
     const newBadges = []
     if (!earnedIds.has("first_event") && totalEvents >= 1) newBadges.push("first_event")
@@ -235,165 +240,191 @@ export default function LogActivityPage() {
     const week = Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7)
     return `${now.getFullYear()}-W${week}`
   }
+  // --- End Backend Logic Helpers ---
 
   return (
-    <div className="mx-auto max-w-xl px-6 py-12">
-      <h1 className="text-3xl font-bold mb-2">Log Activity</h1>
-      <p className="text-muted-foreground mb-8">Record your activity and earn points</p>
+    <div className="min-h-screen bg-slate-50/50 font-sans pb-24">
+      
+      {/* ── TOP NAV ── */}
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 pt-6 pb-4">
+        <button 
+          onClick={() => router.back()} 
+          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100"
+        >
+          <ArrowLeft className="size-4" /> Cancel
+        </button>
+      </div>
 
-      {success && (
-        <div className="rounded-xl bg-green-50 text-green-700 p-4 mb-6 font-medium">{success}</div>
-      )}
-      {error && (
-        <div className="rounded-xl bg-destructive/10 text-destructive p-4 mb-6 text-sm">{error}</div>
-      )}
-
-      <div className="space-y-5">
-        {/* Log type */}
-        <div className="flex gap-3">
-          <button
-            onClick={() => setLogType("manual")}
-            className={`flex-1 rounded-xl border p-4 text-left transition-colors ${logType === "manual" ? "border-foreground" : "border-border"}`}
-          >
-            <p className="font-medium text-sm mb-1">🏃 Log Activity</p>
-            <p className="text-xs text-muted-foreground">Run, ride, swim, workout</p>
-          </button>
-          <button
-            onClick={() => setLogType("match")}
-            className={`flex-1 rounded-xl border p-4 text-left transition-colors ${logType === "match" ? "border-foreground" : "border-border"}`}
-          >
-            <p className="font-medium text-sm mb-1">🎾 Log Match</p>
-            <p className="text-xs text-muted-foreground">Padel, tennis vs opponent</p>
-          </button>
-        </div>
-
-        {/* Activity type */}
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Activity</label>
-          <div className="flex flex-wrap gap-2">
-            {(logType === "match" ? MATCH_ACTIVITIES : ACTIVITIES).map(act => (
-              <button
-                key={act}
-                onClick={() => setForm({ ...form, activity_type: act })}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
-                  form.activity_type === act
-                    ? "bg-foreground text-background"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {act}
-              </button>
-            ))}
+      <div className="mx-auto max-w-2xl px-4 sm:px-6">
+        
+        {successMsg ? (
+          <div className="bg-white rounded-[2rem] p-12 text-center shadow-sm border border-slate-100 mt-10 animate-in zoom-in-95 duration-300">
+            <div className="size-20 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="size-10" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 mb-2">Activity Logged!</h1>
+            <p className="text-lg font-bold text-teal-600 bg-teal-50 py-2 px-4 rounded-full inline-block mt-2">
+              {successMsg}
+            </p>
           </div>
-        </div>
-
-        {logType === "manual" ? (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">Distance (km)</label>
-                <input
-                  type="number"
-                  className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm"
-                  placeholder="e.g. 5.2"
-                  value={form.distance}
-                  onChange={(e) => setForm({ ...form, distance: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">Duration (mins)</label>
-                <input
-                  type="number"
-                  className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm"
-                  placeholder="e.g. 45"
-                  value={form.duration_mins}
-                  onChange={(e) => setForm({ ...form, duration_mins: e.target.value })}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">Notes (optional)</label>
-              <input
-                className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm"
-                placeholder="e.g. Morning run around the park"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              />
-            </div>
-          </>
         ) : (
-          <>
-            {/* Opponent */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">Opponent</label>
-              <select
-                className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm"
-                value={form.opponent_id}
-                onChange={(e) => setForm({ ...form, opponent_id: e.target.value })}
-              >
-                <option value="">Select opponent...</option>
-                {friends.map(f => (
-                  <option key={f.id} value={f.id}>{f.full_name}</option>
-                ))}
-              </select>
+          <form onSubmit={handleLog} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            <div className="mb-8">
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-3">Log your hustle.</h1>
+              <p className="text-lg text-slate-500 font-medium">Record your workouts and claim your leaderboard points.</p>
             </div>
 
-            {/* Score */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">Score</label>
-              <input
-                className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm"
-                placeholder="e.g. 6-3, 6-4"
-                value={form.score}
-                onChange={(e) => setForm({ ...form, score: e.target.value })}
-              />
-            </div>
-
-            {/* Result */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Result</label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setForm({ ...form, won: true })}
-                  className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors ${form.won ? "border-foreground bg-foreground text-background" : "border-border"}`}
-                >
-                  🏆 I won
-                </button>
-                <button
-                  onClick={() => setForm({ ...form, won: false })}
-                  className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors ${!form.won ? "border-foreground bg-foreground text-background" : "border-border"}`}
-                >
-                  😅 I lost
-                </button>
-              </div>
-            </div>
-
-            {/* League */}
-            {leagues.length > 0 && (
+            <div className="bg-white rounded-[2rem] p-6 sm:p-10 shadow-sm border border-slate-100 space-y-8">
+              
+              {/* 1. Select Sport */}
               <div>
-                <label className="text-sm text-muted-foreground mb-1 block">League (optional)</label>
-                <select
-                  className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm"
-                  value={form.league_id}
-                  onChange={(e) => setForm({ ...form, league_id: e.target.value })}
-                >
-                  <option value="">No league</option>
-                  {leagues.map(l => (
-                    <option key={l.id} value={l.id}>{l.name}</option>
+                <label className="block text-sm font-bold text-slate-700 mb-4 ml-1">What did you do?</label>
+                <div className="flex gap-3 overflow-x-auto pb-4 snap-x px-1" style={{ scrollbarWidth: "none" }}>
+                  {SPORTS.map(sport => (
+                    <button
+                      key={sport.id}
+                      type="button"
+                      onClick={() => setForm({...form, activity_type: sport.id})}
+                      className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl border-2 font-bold text-sm transition-all snap-start ${
+                        form.activity_type === sport.id 
+                          ? "border-teal-500 bg-teal-50 text-teal-900 shadow-sm" 
+                          : "border-slate-100 bg-white text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      <span className="text-xl">{sport.emoji}</span> {sport.label}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
-            )}
-          </>
+
+              {/* 2. Dynamic Inputs based on Sport */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                
+                {/* Duration (Always show) */}
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-2 ml-1">
+                    <Clock className="size-4 text-teal-600" /> Duration (Mins)
+                  </label>
+                  <input 
+                    type="number"
+                    placeholder="e.g. 45"
+                    value={form.duration_mins}
+                    onChange={(e) => setForm({...form, duration_mins: e.target.value})}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-50 transition-all"
+                  />
+                </div>
+
+                {/* Distance (Only if not a match) */}
+                {!isMatch && (
+                  <div className="animate-in fade-in zoom-in-95">
+                    <label className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-2 ml-1">
+                      <MapPin className="size-4 text-teal-600" /> Distance (km)
+                    </label>
+                    <input 
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g. 5.2"
+                      value={form.distance}
+                      onChange={(e) => setForm({...form, distance: e.target.value})}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-50 transition-all"
+                    />
+                  </div>
+                )}
+
+                {/* Match Specific Fields */}
+                {isMatch && (
+                  <>
+                    <div className="animate-in fade-in zoom-in-95">
+                      <label className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-2 ml-1">
+                        <Users className="size-4 text-teal-600" /> Opponent
+                      </label>
+                      <select
+                        required
+                        value={form.opponent_id}
+                        onChange={(e) => setForm({ ...form, opponent_id: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-base font-bold text-slate-900 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-50 transition-all"
+                      >
+                        <option value="">Select opponent...</option>
+                        {friends.map(f => (
+                          <option key={f.id} value={f.id}>{f.full_name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="animate-in fade-in zoom-in-95">
+                      <label className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-2 ml-1">
+                        <Trophy className="size-4 text-teal-600" /> Score
+                      </label>
+                      <input
+                        required
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-50 transition-all"
+                        placeholder="e.g. 6-3, 6-4"
+                        value={form.score}
+                        onChange={(e) => setForm({ ...form, score: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="animate-in fade-in zoom-in-95 sm:col-span-2">
+                      <label className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-3 ml-1">
+                        <Medal className="size-4 text-teal-600" /> Match Outcome
+                      </label>
+                      <div className="flex gap-3">
+                        <button type="button" onClick={() => setForm({...form, won: true})} className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all ${form.won ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm" : "border-slate-100 bg-white text-slate-400 hover:border-slate-300"}`}>🏆 I Won</button>
+                        <button type="button" onClick={() => setForm({...form, won: false})} className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all ${!form.won ? "border-rose-500 bg-rose-50 text-rose-700 shadow-sm" : "border-slate-100 bg-white text-slate-400 hover:border-slate-300"}`}>😅 I Lost</button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {/* League Selection (Always available) */}
+                {leagues.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <label className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-2 ml-1">
+                      <Trophy className="size-4 text-teal-600" /> Link to League (Optional)
+                    </label>
+                    <select
+                      value={form.league_id}
+                      onChange={(e) => setForm({ ...form, league_id: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-base font-bold text-slate-900 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-50 transition-all"
+                    >
+                      <option value="">Do not link to league</option>
+                      {leagues.map(l => (
+                        <option key={l.id} value={l.id}>{l.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Notes */}
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-2 ml-1">
+                  <FileText className="size-4 text-teal-600" /> Notes (Optional)
+                </label>
+                <textarea 
+                  placeholder="Felt great! Beautiful weather today..."
+                  value={form.notes}
+                  onChange={(e) => setForm({...form, notes: e.target.value})}
+                  rows={2}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-base font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-50 transition-all resize-none"
+                />
+              </div>
+
+            </div>
+
+            <div className="mt-8">
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-600 text-white px-8 py-5 text-lg font-black shadow-md hover:bg-teal-700 hover:-translate-y-0.5 transition-all disabled:opacity-50"
+              >
+                {loading ? "Saving..." : "Log Activity"} <Zap className="size-5 text-amber-300" />
+              </button>
+            </div>
+          </form>
         )}
 
-        <button
-          onClick={handleLog}
-          disabled={loading}
-          className="w-full rounded-xl bg-foreground text-background py-3 font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {loading ? "Logging..." : "Log Activity"}
-        </button>
       </div>
     </div>
   )

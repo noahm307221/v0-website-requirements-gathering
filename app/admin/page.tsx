@@ -130,7 +130,12 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
+    <div className="relative min-h-screen mx-auto max-w-4xl px-6 py-12">
+      {/* Warm ambient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50 pointer-events-none z-0" />
+      <div className="absolute top-[-10%] right-[-5%] w-[700px] h-[700px] rounded-full bg-teal-100/40 blur-[100px] pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-orange-100/40 blur-[100px] pointer-events-none z-0" />
+      <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Admin Panel</h1>
         <button
@@ -262,6 +267,7 @@ export default function AdminPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }
