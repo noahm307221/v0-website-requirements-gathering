@@ -5,8 +5,13 @@ import { useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { SearchFilters } from "@/components/events/search-filters"
 import { EventsGrid } from "@/components/events/events-grid"
-import { MapPin, Loader2, Navigation, X, Search, CheckCircle2, ChevronRight } from "lucide-react"
+import { 
+  MapPin, Loader2, Navigation, X, Search, CheckCircle2, 
+  ChevronRight, Sparkles, Filter, Zap, Globe, SlidersHorizontal 
+} from "lucide-react"
+import { cn } from "@/lib/utils"
 
+/** ── THE ENGINE: HARVESINE DISTANCE CALCULATION ── **/
 function getDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 3958.8 // Earth radius in miles
   const dLat = (lat2 - lat1) * Math.PI / 180
@@ -22,13 +27,14 @@ export function EventsContent() {
   const searchParams = useSearchParams()
   const initialCategory = searchParams.get("category") ?? "all"
 
+  // ── FULL STATE PERSISTENCE ──
   const [allEvents, setAllEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState(initialCategory)
   const [sortBy, setSortBy] = useState("date")
 
-  // Location state
+  // ── GEOLOCATION ENGINE STATE ──
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLon, setUserLon] = useState<number | null>(null)
   const [locationInput, setLocationInput] = useState("")
@@ -39,6 +45,7 @@ export function EventsContent() {
 
   const hasActiveFilters = search !== "" || selectedCategory !== "all" || locationEnabled || sortBy !== "date"
 
+  // ── DATA FETCHING ──
   useEffect(() => {
     async function fetchEvents() {
       const { data, error } = await supabase.from("events").select("*")
@@ -55,6 +62,7 @@ export function EventsContent() {
     fetchEvents()
   }, [])
 
+  // ── GEOLOCATION & GEOCODING LOGIC ──
   async function detectLocation() {
     setDetectingLocation(true)
     navigator.geolocation.getCurrentPosition(
@@ -111,9 +119,11 @@ export function EventsContent() {
     }
   }
 
+  // ── THE FILTERING & SORTING MATRIX ──
   const filteredEvents = useMemo(() => {
     let result = [...allEvents]
 
+    // Distance Filter
     if (locationEnabled && userLat !== null && userLon !== null) {
       result = result.filter(e => {
         if (!e.latitude || !e.longitude) return false
@@ -122,6 +132,7 @@ export function EventsContent() {
       })
     }
 
+    // Keyword Search
     if (search) {
       const query = search.toLowerCase()
       result = result.filter(e =>
@@ -132,16 +143,18 @@ export function EventsContent() {
       )
     }
 
+    // Category Filter
     if (selectedCategory !== "all") {
       result = result.filter(e => e.categoryId === selectedCategory)
     }
 
+    // Advanced Sorting
     switch (sortBy) {
       case "date":
         result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         break
       case "spots":
-        result.sort((a, b) => b.spotsTotal - b.spotsTaken - (a.spotsTotal - a.spotsTaken))
+        result.sort((a, b) => (b.spotsTotal - b.spotsTaken) - (a.spotsTotal - a.spotsTaken))
         break
       case "popular":
         result.sort((a, b) => b.spotsTaken - a.spotsTaken)
@@ -149,8 +162,8 @@ export function EventsContent() {
       case "distance":
         if (userLat && userLon) {
           result.sort((a, b) => {
-            const distA = a.latitude ? getDistanceMiles(userLat, userLon, a.latitude, a.longitude) : 999
-            const distB = b.latitude ? getDistanceMiles(userLat, userLon, b.latitude, b.longitude) : 999
+            const distA = a.latitude ? getDistanceMiles(userLat, userLon, a.latitude, a.longitude) : 9999
+            const distB = b.latitude ? getDistanceMiles(userLat, userLon, b.latitude, b.longitude) : 9999
             return distA - distB
           })
         }
@@ -174,89 +187,76 @@ export function EventsContent() {
   if (loading) return null
 
   return (
-    <>
-      {/* ── SEARCH ── */}
-      <div className="mb-8">
+    <div className="mx-auto max-w-[1800px] w-full px-8 pb-40">
+      
+      {/* ── CINEMATIC HEADER ── */}
+      <div className="pt-16 mb-16 animate-in fade-in slide-in-from-left-8 duration-1000">
+        <div className="flex items-center gap-4 mb-6">
+           <div className="h-1 w-12 bg-teal-500 rounded-full" />
+           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-teal-600/70">Performance Hub</span>
+        </div>
+        <h1 className="text-7xl md:text-9xl font-black tracking-[-0.06em] text-slate-900 leading-[0.85] italic uppercase">
+          Find Your <br/> Challenge<span className="text-teal-500">.</span>
+        </h1>
+      </div>
 
-        {/* Main search row */}
-        <div className="flex flex-col md:flex-row gap-3 mb-3">
-
-          {/* Keyword */}
+      {/* ── THE COMMAND CENTER (Sticky Unified Strip) ── */}
+      <div className="relative z-40 space-y-6 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        
+        {/* Layer 1: Search & Location */}
+        <div className="bg-white/80 backdrop-blur-2xl border border-white p-4 rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] flex flex-col xl:flex-row gap-4">
+          
           <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
+            <Search className="absolute left-7 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-teal-600 transition-colors" />
             <input
-              className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-10 py-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-500/10 shadow-sm transition-all"
-              placeholder="Search events, sports, venues..."
+              className="w-full bg-slate-50 border-none rounded-[2rem] pl-16 pr-10 py-6 text-base font-black text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500/20 transition-all outline-none"
+              placeholder="Search sessions, crews, venues..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-100 transition-colors">
-                <X className="size-3.5 text-slate-400" />
-              </button>
-            )}
           </div>
 
-          {/* Location */}
-          {locationEnabled ? (
-            <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 rounded-2xl px-4 py-3 shadow-sm md:min-w-[220px]">
-              <CheckCircle2 className="size-4 text-teal-600 shrink-0" />
-              <span className="text-sm font-bold text-teal-800 flex-1 truncate capitalize">{locationLabel}</span>
-              <button
-                onClick={() => { setLocationEnabled(false); setLocationInput(""); setLocationLabel("") }}
-                className="p-1 rounded-full hover:bg-teal-100 transition-colors shrink-0">
-                <X className="size-3.5 text-teal-600" />
-              </button>
-            </div>
-          ) : (
-            <div className="relative group md:w-72">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
-              <input
-                className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-20 py-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-500/10 shadow-sm transition-all"
-                placeholder="City or postcode"
-                value={locationInput}
-                onChange={e => setLocationInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && searchLocation()}
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                {locationInput && (
-                  <button onClick={searchLocation} className="bg-teal-600 text-white rounded-xl px-3 py-1.5 text-xs font-bold hover:bg-teal-700 transition-colors">
-                    Go
+          <div className="xl:w-[450px] flex items-center bg-slate-900 rounded-[2rem] px-8 py-5 relative overflow-hidden group/loc shadow-xl">
+             <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-transparent opacity-0 group-hover/loc:opacity-100 transition-opacity" />
+             
+             {locationEnabled ? (
+               <div className="flex items-center justify-between w-full relative z-10">
+                  <div className="flex items-center gap-4">
+                    <CheckCircle2 className="size-4 text-teal-400" />
+                    <span className="text-sm font-black text-white uppercase tracking-[0.2em]">{locationLabel}</span>
+                  </div>
+                  <button onClick={() => { setLocationEnabled(false); setLocationInput(""); setLocationLabel("") }} className="p-2 rounded-xl bg-white/10 text-white hover:bg-rose-500 transition-all">
+                    <X className="size-4" />
                   </button>
-                )}
-                <button
-                  onClick={detectLocation}
-                  disabled={detectingLocation}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
-                  title="Use my location">
-                  {detectingLocation ? <Loader2 className="size-4 animate-spin text-teal-600" /> : <Navigation className="size-4" />}
-                </button>
-              </div>
-            </div>
-          )}
+               </div>
+             ) : (
+               <div className="flex items-center w-full relative z-10 gap-4">
+                  <MapPin className="size-5 text-teal-500" />
+                  <input
+                    className="bg-transparent border-none outline-none text-sm font-black text-white placeholder:text-zinc-600 w-full tracking-widest uppercase"
+                    placeholder="Enter Location..."
+                    value={locationInput}
+                    onChange={e => setLocationInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && searchLocation()}
+                  />
+                  <div className="flex items-center gap-2">
+                     {locationInput && (
+                       <button onClick={searchLocation} className="bg-teal-500 text-slate-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-400 transition-all">
+                         Go
+                       </button>
+                     )}
+                     <button onClick={detectLocation} className="text-zinc-500 hover:text-white transition-colors p-2 rounded-xl bg-white/5">
+                        {detectingLocation ? <Loader2 className="size-4 animate-spin" /> : <Navigation className="size-4" />}
+                     </button>
+                  </div>
+               </div>
+             )}
+          </div>
         </div>
 
-        {/* Radius pills — only when location active */}
-        {locationEnabled && (
-          <div className="flex items-center gap-2 mb-3 animate-in fade-in slide-in-from-top-1 duration-200">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Within</span>
-            {[5, 10, 25, 50].map(r => (
-              <button key={r} onClick={() => setRadius(r)}
-                className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${
-                  radius === r ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"
-                }`}>
-                {r} mi
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Category pills + sort row */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-            <SearchFilters
-              search={search}
-              onSearchChange={setSearch}
+        {/* Layer 2: Spread-out Modalities & Sorting */}
+        <div className="bg-white/50 backdrop-blur-md rounded-[3rem] border border-slate-100 p-6 shadow-sm">
+           <SearchFilters
               selectedCategory={selectedCategory}
               onCategoryChange={setSelectedCategory}
               sortBy={sortBy}
@@ -264,16 +264,17 @@ export function EventsContent() {
               resultCount={filteredEvents.length}
               onClearAll={clearFilters}
               hasActiveFilters={hasActiveFilters}
+              radius={radius}
+              onRadiusChange={setRadius}
+              locationEnabled={locationEnabled}
             />
-          </div>
         </div>
-
       </div>
 
-      {/* ── EVENTS GRID ── */}
-      <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
-        <EventsGrid events={filteredEvents} onClearFilters={clearFilters} />
-      </div>
-    </>
+      {/* ── FULL WIDTH RESULTS ── */}
+      <main className="w-full animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300">
+         <EventsGrid events={filteredEvents} onClearFilters={clearFilters} />
+      </main>
+    </div>
   )
 }

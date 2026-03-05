@@ -3,29 +3,29 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import { format, isToday, isTomorrow, isPast, isFuture } from "date-fns"
-import { User, MapPin, Calendar, Lock, Globe, Camera, ChevronRight, TrendingUp, Award, Zap, CheckCircle2, Edit3, Activity, Trophy, Flame, Crown, Clock } from "lucide-react"
+import { format, isToday, isTomorrow } from "date-fns"
+import { 
+  User, MapPin, Calendar, Lock, Globe, Camera, ChevronRight, 
+  Edit3, Activity, Trophy, Flame, Crown, Clock, Hash,
+  Settings, Share2, Plus, CheckCircle2
+} from "lucide-react"
 import { getLevel, BADGES } from "@/lib/points"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 const ALL_CATEGORIES = ["padel", "running", "yoga", "tennis", "cycling", "crossfit", "swimming", "hiking"]
 const TABS = ["overview", "activity", "schedule", "leagues"] as const
 type Tab = typeof TABS[number]
 
 const BADGE_COLORS: Record<string, string> = {
-  first_event: "#0D9488", // Teal 600
-  five_events: "#059669", // Emerald 600
-  ten_events: "#0284C7",  // Light Blue
-  first_win: "#EAB308",   // Yellow
-  five_wins: "#10B981",   // Emerald 500
-  explorer: "#06B6D4",    // Cyan
-  streaker: "#F97316",    // Orange
-  all_rounder: "#6366F1", // Indigo
+  first_event: "#0D9488", five_events: "#059669", ten_events: "#0284C7",
+  first_win: "#EAB308", five_wins: "#10B981", explorer: "#06B6D4",
+  streaker: "#F97316", all_rounder: "#6366F1",
 }
 
 const ACTIVITY_ICONS: Record<string, string> = {
-  running: "↗", cycling: "⟳", swimming: "≋", hiking: "△",
-  crossfit: "✕", padel: "◎", tennis: "◎", yoga: "☽",
+  running: "🏃", cycling: "🚲", swimming: "🏊", hiking: "🥾",
+  crossfit: "🏋️", padel: "🎾", tennis: "🎾", yoga: "🧘",
 }
 
 function formatEventDate(dateStr: string) {
@@ -57,7 +57,6 @@ export default function ProfilePage() {
     is_public: true, avatar_url: "",
   })
 
-  // Deep linking logic (e.g., from Dashboard)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const requestedTab = params.get("tab") as Tab
@@ -72,7 +71,6 @@ export default function ProfilePage() {
       if (!user) { router.push("/auth/login"); return }
       setUser(user)
 
-      // Profile load
       const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
       if (profileData) {
         setProfile(profileData)
@@ -84,40 +82,29 @@ export default function ProfilePage() {
           is_public: profileData.is_public ?? true,
           avatar_url: profileData.avatar_url ?? "",
         })
-      } else {
-        const newProfile = { id: user.id, email: user.email, full_name: user.user_metadata?.full_name ?? "", is_public: true, created_at: new Date().toISOString() }
-        await supabase.from("profiles").insert([newProfile])
-        setProfile(newProfile)
-        setForm({ full_name: newProfile.full_name, location: "", bio: "", favourite_categories: [], is_public: true, avatar_url: "" })
       }
 
-      // Event registrations load
       const { data: regs } = await supabase.from("registrations").select("*").eq("user_id", user.id).order("registered_at", { ascending: false })
       if (regs && regs.length > 0) {
         const { data: eventData } = await supabase.from("events").select("*").in("id", regs.map(r => r.event_id))
         setRegistrations(regs.map(r => ({ ...r, events: eventData?.find(e => e.id === r.event_id) ?? null })))
       }
 
-      // Activity logs load
       const { data: logs } = await supabase.from("activity_logs").select("*").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(20)
       setActivityLogs(logs || [])
 
-      // Base user stats
       const { data: stats } = await supabase.from("user_stats").select("*").eq("user_id", user.id)
       setUserStats(stats || [])
 
-      // Badges
       const { data: badges } = await supabase.from("user_badges").select("*").eq("user_id", user.id)
       setUserBadges(badges || [])
 
-      // Leagues Load (Your custom fix!)
       const { data: memberData } = await supabase.from("league_members").select("*, leagues(*)").eq("user_id", user.id)
       if (memberData && memberData.length > 0) {
         setLeagues(memberData.map(m => m.leagues).filter(Boolean))
         setLeagueMembers(memberData)
       }
 
-      // Global Rank Calculation & Bragging Rights (Original Logic Maintained!)
       const { data: allStats } = await supabase.from("user_stats").select("user_id, total_points, activity_type")
       if (allStats) {
         const aggregated: Record<string, number> = {}
@@ -125,25 +112,12 @@ export default function ProfilePage() {
         const sorted = Object.entries(aggregated).sort((a, b) => b[1] - a[1])
         const rank = sorted.findIndex(([uid]) => uid === user.id)
         if (rank !== -1) setLeaderboardRank(rank + 1)
-
-        const activityTotals: Record<string, Record<string, number>> = {}
-        allStats.forEach(s => {
-          if (!activityTotals[s.activity_type]) activityTotals[s.activity_type] = {}
-          activityTotals[s.activity_type][s.user_id] = (activityTotals[s.activity_type][s.user_id] || 0) + (s.total_points || 0)
-        })
-        for (const [activity, totals] of Object.entries(activityTotals)) {
-          const top = Object.entries(totals).sort((a, b) => b[1] - a[1])[0]
-          if (top && top[0] === user.id && top[1] > 0) {
-            setBraggingRights(`#1 ${activity.charAt(0).toUpperCase() + activity.slice(1)}`)
-            break
-          }
-        }
       }
 
       setLoading(false)
     }
     load()
-  }, [])
+  }, [router])
 
   async function handleSave() {
     setSaving(true)
@@ -173,15 +147,12 @@ export default function ProfilePage() {
     }))
   }
 
-  // --- Derived stats ---
   const today = new Date().toISOString().split("T")[0]
   const upcomingEvents = registrations.filter(r => r.events && r.events.date >= today)
   const pastEvents = registrations.filter(r => r.events && r.events.date < today)
   
   const totalPoints = userStats.reduce((sum, s) => sum + (s.total_points || 0), 0)
   const totalEvents = userStats.reduce((sum, s) => sum + (s.events_attended || 0), 0)
-  const totalMatches = userStats.reduce((sum, s) => sum + (s.matches_played || 0), 0)
-  const totalWins = userStats.reduce((sum, s) => sum + (s.matches_won || 0), 0)
   const maxStreak = Math.max(...userStats.map(s => s.streak_weeks || 0), 0)
   
   const level = getLevel(totalPoints)
@@ -194,433 +165,368 @@ export default function ProfilePage() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-50/50 font-sans pb-24">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10 sm:py-16">
-        
-        {/* Bragging rights */}
-        {braggingRights && (
-          <Link href="/compete" className="group inline-flex items-center gap-2 mb-8 rounded-full border border-teal-100 bg-teal-50 px-5 py-2 text-sm hover:border-teal-200 transition-colors shadow-sm animate-in fade-in slide-in-from-top-4">
-            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-bold text-teal-900">{braggingRights}</span>
-            <span className="text-teal-700/70">· #1 on leaderboard</span>
-            <ChevronRight className="size-4 text-teal-600 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        )}
+    <div className="min-h-screen bg-[#F8FAFC] pb-32">
+      
+      {/* ── PROFILE HERO ── */}
+      <div className="relative h-64 w-full bg-slate-900 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/20 to-emerald-600/20" />
+        <div className="absolute inset-0 backdrop-blur-3xl" />
+        {/* Abstract background shapes */}
+        <div className="absolute -top-24 -right-24 size-96 rounded-full bg-teal-500/10 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-24 -left-24 size-96 rounded-full bg-emerald-500/10 blur-3xl animate-pulse delay-700" />
+      </div>
 
-        {/* ── HEADER & PROFILE INFO ── */}
-        <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-10 bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-slate-100">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left w-full">
-            <div className="relative shrink-0">
-              <div className="size-24 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 p-1 shadow-md">
-                <div className="size-full rounded-full bg-white overflow-hidden flex items-center justify-center">
+      <div className="mx-auto max-w-5xl px-6 -mt-32 relative z-10">
+        
+        {/* ── MAIN IDENTITY CARD ── */}
+        <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-slate-200/50 border border-white flex flex-col md:flex-row items-center md:items-end justify-between gap-8 mb-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-8 text-center md:text-left">
+            <div className="relative group">
+              <div className="size-40 rounded-[2.5rem] bg-gradient-to-br from-teal-400 to-emerald-500 p-1.5 shadow-2xl transition-transform group-hover:scale-[1.02] duration-500">
+                <div className="size-full rounded-[2.2rem] bg-white overflow-hidden flex items-center justify-center border-4 border-white shadow-inner">
                   {form.avatar_url
                     ? <img src={form.avatar_url} alt="Avatar" className="size-full object-cover" />
-                    : <User className="size-10 text-teal-300" />
+                    : <User className="size-16 text-slate-200" />
                   }
                 </div>
               </div>
               {editing && (
-                <label className="absolute -bottom-1 -right-1 cursor-pointer rounded-full bg-teal-600 p-2 shadow-lg hover:bg-teal-700 transition-colors border-2 border-white">
-                  <Camera className="size-4 text-white" />
+                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-slate-900 p-3 shadow-xl hover:bg-teal-600 transition-all duration-300 border-4 border-white active:scale-90">
+                  <Camera className="size-5 text-white" />
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                 </label>
               )}
             </div>
-            
-            <div className="pt-2 flex-1 w-full">
+
+            <div className="space-y-3 pb-2">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                <span className="bg-teal-50 text-teal-700 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-teal-100">
+                  Level {level.level} Athlete
+                </span>
+                {leaderboardRank && (
+                  <span className="bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-amber-100 flex items-center gap-1">
+                    <Crown className="size-3" /> Rank #{leaderboardRank}
+                  </span>
+                )}
+              </div>
+              
               {editing ? (
-                 <input className="text-3xl font-black bg-transparent border-b-2 border-teal-200 focus:border-teal-500 outline-none w-full text-center md:text-left mb-2" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Your name" />
+                 <input className="text-4xl font-black bg-slate-50 rounded-2xl px-4 py-2 border-none outline-none focus:ring-2 focus:ring-teal-500 transition-all w-full md:w-auto" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
               ) : (
-                 <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{form.full_name || "Set your name"}</h1>
+                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">{form.full_name || "New Athlete"}</h1>
               )}
               
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm font-medium text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  {form.is_public ? <Globe className="size-4" /> : <Lock className="size-4" />} 
-                  {form.is_public ? "Public Profile" : "Private Profile"}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-bold text-slate-400">
+                <span className="flex items-center gap-2">
+                  <MapPin className="size-4 text-teal-500" /> {form.location || "Location not set"}
                 </span>
-                {form.location && (
-                  <>
-                    <span className="text-slate-300">•</span>
-                    <span className="flex items-center gap-1.5"><MapPin className="size-4" /> {form.location}</span>
-                  </>
-                )}
+                <span className="flex items-center gap-2">
+                  <Clock className="size-4 text-slate-300" /> Joined {profile?.created_at ? format(new Date(profile.created_at), 'MMM yyyy') : 'Recently'}
+                </span>
               </div>
             </div>
           </div>
-          
-          <button 
-            onClick={() => editing ? handleSave() : setEditing(true)} 
-            disabled={saving} 
-            className="flex items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-6 py-2.5 text-sm font-bold text-slate-700 hover:border-teal-400 hover:text-teal-700 transition-all shadow-sm disabled:opacity-50 shrink-0 w-full md:w-auto"
-          >
-            <Edit3 className="size-4" /> {saving ? "Saving..." : editing ? "Save Changes" : "Edit Profile"}
-          </button>
-        </div>
 
-        {/* ── STATS BENTO ── */}
-        <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-sm border border-slate-100 mb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-8">
-            <div className="text-center sm:border-r border-slate-100">
-              <p className="text-3xl font-black text-teal-600 tracking-tight">{totalPoints.toLocaleString()}</p>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Points</p>
-            </div>
-            <div className="text-center sm:border-r border-slate-100">
-              <p className="text-3xl font-black text-slate-800 tracking-tight">{leaderboardRank ? `#${leaderboardRank}` : "—"}</p>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Global Rank</p>
-            </div>
-            <div className="text-center sm:border-r border-slate-100">
-              <p className="text-3xl font-black text-slate-800 tracking-tight">{totalEvents}</p>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Events</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-black text-orange-500 tracking-tight flex items-center justify-center gap-1">
-                {maxStreak > 0 ? maxStreak : "—"} {maxStreak > 0 && <Flame className="size-6" fill="currentColor"/>}
-              </p>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Wk Streak</p>
-            </div>
-          </div>
-
-          {/* Level Progress */}
-          <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{level.emoji}</span>
-                <span className="font-black text-slate-800 uppercase tracking-wider text-sm">{level.name}</span>
-              </div>
-              {level.max !== Infinity && (
-                <span className="text-xs font-bold text-slate-500">{level.max - totalPoints + 1} points to next level</span>
-              )}
-            </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-all duration-1000"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ── TABS ── */}
-        <div className="flex gap-2 border-b border-slate-200 mb-8 overflow-x-auto pb-px" style={{ scrollbarWidth: "none" }}>
-          {[
-            { id: "overview", label: "Overview", icon: Activity },
-            { id: "activity", label: "Activity Log", icon: Clock },
-            { id: "schedule", label: "Schedule", icon: Calendar },
-            { id: "leagues", label: "Leagues", icon: Trophy },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-black transition-all border-b-2 whitespace-nowrap ${
-                activeTab === tab.id ? "border-teal-500 text-teal-700" : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <tab.icon className="size-4.5" />
-              {tab.label}
+          <div className="flex gap-3 w-full md:w-auto">
+            <button className="flex-1 md:flex-none p-3.5 rounded-2xl border border-slate-200 hover:bg-slate-50 transition-all active:scale-95">
+              <Share2 className="size-5 text-slate-600" />
             </button>
-          ))}
+            <button 
+              onClick={() => editing ? handleSave() : setEditing(true)} 
+              className={cn(
+                "flex-1 md:flex-none flex items-center justify-center gap-2 rounded-2xl px-8 py-3.5 text-sm font-black transition-all active:scale-95 shadow-lg",
+                editing ? "bg-teal-600 text-white hover:bg-teal-700 shadow-teal-200" : "bg-slate-900 text-white hover:bg-slate-800 shadow-slate-200"
+              )}
+            >
+              {editing ? (saving ? "Saving..." : "Save Profile") : "Edit Profile"}
+            </button>
+          </div>
         </div>
 
-        {/* ── TAB CONTENT ── */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* ── CONTENT GRID ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* OVERVIEW TAB */}
-          {activeTab === "overview" && (
-            <div className="space-y-8">
-
-              {/* Edit fields */}
-              {editing && (
-                <div className="space-y-4 rounded-[2rem] bg-white border border-slate-100 shadow-sm p-6 sm:p-8">
-                  <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Edit Details</h2>
-                  <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl">
-                    <MapPin className="size-5 text-slate-400 shrink-0 ml-2" />
-                    <input className="text-base bg-transparent border-none outline-none w-full font-medium" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Your city" />
-                  </div>
-                  <div className="flex items-start gap-4 bg-slate-50 p-3 rounded-xl pt-4">
-                    <User className="size-5 text-slate-400 shrink-0 ml-2" />
-                    <textarea className="text-base bg-transparent border-none outline-none w-full resize-none font-medium" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Write a short bio about your fitness goals..." rows={3} />
-                  </div>
-                  <div className="flex items-center justify-between p-2 pt-4">
-                    <span className="text-base font-bold text-slate-700">Make my profile public</span>
-                    <button onClick={() => setForm({ ...form, is_public: !form.is_public })} className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${form.is_public ? "bg-teal-500" : "bg-slate-300"}`}>
-                      <span className={`inline-block size-5 rounded-full bg-white transition-transform ${form.is_public ? "translate-x-6" : "translate-x-1"}`} />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Bio */}
-              {!editing && form.bio && (
-                <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-sm border border-slate-100">
-                  <p className="text-base text-slate-600 leading-relaxed font-medium whitespace-pre-line">{form.bio}</p>
-                </div>
-              )}
-
-              {/* Favourite Sports */}
-              <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-sm border border-slate-100">
-                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Favourite Sports</h2>
-                {form.favourite_categories.length === 0 && !editing ? (
-                  <p className="text-slate-500 font-medium">No favourite sports selected yet.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2.5">
-                    {ALL_CATEGORIES.map(cat => {
-                      const isSelected = form.favourite_categories.includes(cat);
-                      if (!editing && !isSelected) return null; // Hide unselected when not editing
-                      return (
-                        <button
-                          key={cat}
-                          onClick={() => editing && toggleCategory(cat)}
-                          className={`rounded-full px-5 py-2.5 text-sm font-bold capitalize transition-all ${
-                            isSelected
-                              ? "bg-teal-600 text-white shadow-md"
-                              : "bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100"
-                          } ${editing ? "cursor-pointer" : "cursor-default"}`}
-                        >
-                          {cat}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Trophy cabinet (Original badge logic preserved) */}
-              <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-sm border border-slate-100">
+          {/* LEFT SIDEBAR: Stats & Progress */}
+          <div className="lg:col-span-4 space-y-8 sticky top-24">
+            
+            {/* XP Progression Card */}
+            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 overflow-hidden relative group transition-all hover:shadow-xl hover:shadow-slate-200/50">
+              <div className="relative z-10">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-black text-slate-800 tracking-tight">Trophy Cabinet</h2>
-                  <span className="text-sm font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-100">{userBadges.length}/{BADGES.length} Unlocked</span>
+                  <div className="size-14 rounded-2xl bg-teal-50 flex items-center justify-center text-3xl shadow-inner">
+                    {level.emoji}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total XP</p>
+                    <p className="text-2xl font-black text-slate-900">{totalPoints.toLocaleString()}</p>
+                  </div>
                 </div>
 
-                {/* Earned Badges */}
-                {userBadges.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                    {userBadges.map(ub => {
-                      const badge = BADGES.find(b => b.id === ub.badge_id)
-                      if (!badge) return null
-                      const color = BADGE_COLORS[badge.id] ?? "#0D9488"
-                      return (
-                        <div key={ub.badge_id} className="rounded-3xl border border-slate-100 p-5 flex flex-col items-center gap-2 text-center shadow-sm hover:shadow-md transition-shadow" style={{ borderTopColor: color, borderTopWidth: 4 }}>
-                          <span className="text-4xl">{badge.emoji}</span>
-                          <p className="text-sm font-black leading-tight text-slate-800 mt-1">{badge.name}</p>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{format(new Date(ub.earned_at), "MMM d")}</p>
-                        </div>
-                      )
-                    })}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-black uppercase tracking-wider">
+                    <span className="text-teal-600">{level.name}</span>
+                    <span className="text-slate-400">{progressPct.toFixed(0)}%</span>
                   </div>
-                )}
-
-                {/* Locked Badges */}
-                <div className="space-y-3 pt-6 border-t border-slate-100">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Locked Badges</p>
-                  {BADGES.filter(b => !userBadges.find(ub => ub.badge_id === b.id)).map(badge => (
-                    <div key={badge.id} className="flex items-center gap-4 px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 opacity-75">
-                      <div className="size-12 rounded-xl bg-slate-200 flex items-center justify-center text-xl grayscale">{badge.emoji}</div>
-                      <div className="flex-1">
-                        <span className="text-sm font-bold text-slate-700">{badge.name}</span>
-                        <span className="block text-xs font-medium text-slate-500 mt-0.5">{badge.description}</span>
-                      </div>
-                      <Lock className="size-4 text-slate-300" />
-                    </div>
-                  ))}
+                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-50 shadow-inner">
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(20,184,166,0.3)]"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* ACTIVITY LOG TAB */}
-          {activeTab === "activity" && (
-            <div className="space-y-8">
-              {/* Per sport stats */}
-              {userStats.length > 0 && (
-                <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-sm border border-slate-100">
-                  <h2 className="text-xl font-black text-slate-800 mb-6">Stats By Sport</h2>
-                  <div className="space-y-4">
-                    {userStats.sort((a, b) => (b.total_points || 0) - (a.total_points || 0)).map(stat => (
-                      <div key={stat.id} className="flex items-center gap-5 bg-slate-50 rounded-2xl px-6 py-5 border border-slate-100 hover:border-teal-200 transition-colors">
-                        <div className="size-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xl font-mono font-bold text-slate-500 shadow-sm">
-                          {ACTIVITY_ICONS[stat.activity_type] ?? "·"}
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm text-center space-y-1">
+                <Trophy className="size-5 text-amber-500 mx-auto mb-2" />
+                <p className="text-2xl font-black text-slate-900">{totalEvents}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Events</p>
+              </div>
+              <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm text-center space-y-1">
+                <Flame className="size-5 text-orange-500 mx-auto mb-2" />
+                <p className="text-2xl font-black text-slate-900">{maxStreak}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Streak</p>
+              </div>
+            </div>
+
+            {/* Favorite Sports Card */}
+            <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-slate-900">Interests</h3>
+                {editing && <Settings className="size-4 text-slate-400" />}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ALL_CATEGORIES.map(cat => {
+                  const isSelected = form.favourite_categories.includes(cat);
+                  if (!editing && !isSelected) return null;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => editing && toggleCategory(cat)}
+                      className={cn(
+                        "rounded-xl px-4 py-2 text-xs font-bold capitalize transition-all duration-300",
+                        isSelected 
+                          ? "bg-slate-900 text-white shadow-lg shadow-slate-200" 
+                          : "bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                      )}
+                    >
+                      {cat}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT CONTENT: Dynamic Tabs */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* Glassmorphic Tab Switcher */}
+            <div className="bg-white/80 backdrop-blur-xl sticky top-20 z-20 rounded-3xl border border-white p-1.5 shadow-xl shadow-slate-200/40 flex gap-1 animate-in fade-in slide-in-from-top-4 duration-1000">
+              {TABS.map(tab => {
+                const isActive = activeTab === tab;
+                const Icon = { overview: Activity, activity: Clock, schedule: Calendar, leagues: Trophy }[tab];
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95",
+                      isActive 
+                        ? "bg-slate-900 text-white shadow-lg" 
+                        : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                    <span className="hidden sm:inline">{tab}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* TAB CONTENT */}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              
+              {/* OVERVIEW TAB */}
+              {activeTab === "overview" && (
+                <div className="space-y-8">
+                  {/* Bio Card */}
+                  <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Bio</h3>
+                    {editing ? (
+                      <textarea 
+                        className="w-full bg-slate-50 rounded-2xl p-4 text-sm font-medium border-none outline-none focus:ring-2 focus:ring-teal-500 transition-all resize-none"
+                        rows={4}
+                        placeholder="Tell the community about your goals..."
+                        value={form.bio}
+                        onChange={e => setForm({...form, bio: e.target.value})}
+                      />
+                    ) : (
+                      <p className="text-slate-600 leading-relaxed font-medium italic">
+                        {form.bio || "No bio set yet. Level up your profile by adding one!"}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Trophy Cabinet Grid */}
+                  <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8">
+                       <Crown className="size-20 text-slate-50 rotate-12" />
+                    </div>
+                    <div className="relative z-10">
+                      <h3 className="text-2xl font-black text-slate-900 mb-8">Achievements</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                        {BADGES.map(badge => {
+                          const earned = userBadges.find(ub => ub.badge_id === badge.id);
+                          return (
+                            <div key={badge.id} className={cn(
+                              "relative group flex flex-col items-center text-center gap-3 p-4 rounded-3xl transition-all duration-500",
+                              earned ? "bg-white shadow-xl shadow-slate-100" : "bg-slate-50/50 opacity-40 grayscale"
+                            )}>
+                              <div className={cn(
+                                "size-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner transition-transform group-hover:scale-110 duration-300",
+                                earned ? "bg-slate-50" : "bg-slate-100"
+                              )}>
+                                {badge.emoji}
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs font-black text-slate-800 line-clamp-1">{badge.name}</p>
+                                {earned && <p className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Unlocked</p>}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ACTIVITY TAB */}
+              {activeTab === "activity" && (
+                <div className="space-y-6">
+                  {activityLogs.length === 0 ? (
+                    <div className="bg-white rounded-[2.5rem] p-20 text-center border border-slate-100 shadow-sm">
+                      <div className="size-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-3xl">🏜️</div>
+                      <h3 className="text-xl font-black text-slate-900 mb-2">No activities yet</h3>
+                      <p className="text-slate-500 mb-8">Log your first session to start earning points.</p>
+                      <Link href="/compete/log" className="bg-slate-900 text-white px-8 py-3 rounded-full font-black text-sm active:scale-95 transition-all">
+                        Log Activity
+                      </Link>
+                    </div>
+                  ) : (
+                    activityLogs.map((log, i) => (
+                      <div key={log.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/30 transition-all flex items-center gap-6 group animate-in slide-in-from-left-4 duration-500" style={{ animationDelay: `${i * 100}ms` }}>
+                        <div className="size-16 rounded-2xl bg-slate-50 flex items-center justify-center text-3xl border border-slate-100 group-hover:bg-white group-hover:border-teal-100 transition-colors">
+                          {ACTIVITY_ICONS[log.activity_type] || "🔥"}
                         </div>
                         <div className="flex-1">
-                          <p className="text-lg font-black capitalize text-slate-800">{stat.activity_type}</p>
-                          <p className="text-sm font-medium text-slate-500 mt-0.5">
-                            {stat.events_attended || 0} events
-                            {stat.matches_played > 0 ? ` · ${stat.matches_won}W ${stat.matches_played - stat.matches_won}L` : ""}
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-black text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-0.5 rounded-md">+{log.points} XP</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{format(new Date(log.logged_at), 'MMM d, h:mm a')}</span>
+                          </div>
+                          <h4 className="text-lg font-black text-slate-900 capitalize">{log.activity_type} session</h4>
+                          <p className="text-sm text-slate-500 font-medium">
+                            {log.duration_mins} mins {log.distance && `· ${log.distance} km`}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-black tabular-nums text-teal-600">{stat.total_points || 0}</p>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">pts</p>
-                        </div>
+                        <ChevronRight className="size-5 text-slate-300 group-hover:text-teal-500 transition-colors" />
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  )}
                 </div>
               )}
 
-              {/* Activity feed */}
-              <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 sm:p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-black text-slate-800">Timeline</h2>
-                  <Link href="/compete/log" className="text-sm font-bold text-white bg-teal-600 px-5 py-2 rounded-full hover:bg-teal-700 shadow-sm transition-colors">+ Log new</Link>
-                </div>
-                
-                {activityLogs.length === 0 ? (
-                  <div className="rounded-[1.5rem] border-2 border-dashed border-slate-200 p-12 text-center bg-slate-50">
-                    <p className="text-lg font-medium text-slate-500 mb-3">No activity logged yet</p>
-                    <Link href="/compete/log" className="text-base font-bold text-teal-600 hover:text-teal-800">Log your first activity →</Link>
-                  </div>
-                ) : (
-                  <div className="space-y-6 relative before:absolute before:inset-0 before:ml-[1.4rem] before:-translate-x-px before:h-full before:w-[2px] before:bg-gradient-to-b before:from-teal-100 before:to-transparent">
-                    {activityLogs.map(log => (
-                      <div key={log.id} className="relative flex items-start gap-5">
-                        <div className="relative z-10 size-12 rounded-full bg-white border-[3px] border-white shadow-sm overflow-hidden flex items-center justify-center ring-1 ring-slate-200">
-                          <span className="text-lg font-bold text-slate-500">{ACTIVITY_ICONS[log.activity_type] ?? "·"}</span>
-                        </div>
-                        <div className="flex-1 bg-slate-50 rounded-3xl p-5 border border-slate-100 hover:border-teal-200 transition-colors">
-                          <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-bold text-slate-800 capitalize text-lg">
-                              {log.log_type === "match_win" ? "Won " : log.log_type === "match_loss" ? "Lost " : ""}{log.activity_type}
-                            </h4>
-                            <span className="text-xs font-black text-teal-700 bg-teal-100 px-2.5 py-1 rounded-md">+{log.points} pts</span>
-                          </div>
-                          <p className="text-sm font-medium text-slate-500 mb-2">
-                            {log.duration_mins && `${log.duration_mins} mins`} 
-                            {log.duration_mins && log.distance && " · "}
-                            {log.distance && `${log.distance} km`}
-                          </p>
-                          {log.notes && <p className="text-sm text-slate-600 italic border-l-2 border-slate-200 pl-3 mt-3">"{log.notes}"</p>}
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">{format(new Date(log.logged_at), "MMM do, h:mm a")}</p>
-                        </div>
+              {/* SCHEDULE TAB */}
+              {activeTab === "schedule" && (
+                <div className="space-y-8">
+                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                        <Calendar className="size-5 text-teal-500" /> Upcoming
+                      </h3>
+                      <Link href="/events" className="size-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-teal-600 transition-all active:scale-90">
+                        <Plus className="size-5" />
+                      </Link>
+                    </div>
+
+                    {upcomingEvents.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400 font-medium italic">
+                        No events on the horizon.
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* SCHEDULE TAB */}
-          {activeTab === "schedule" && (
-            <div className="space-y-8">
-              {/* UPCOMING */}
-              <div>
-                <div className="flex items-center justify-between mb-4 ml-2">
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Upcoming ({upcomingEvents.length})</h3>
-                  <Link href="/events" className="text-sm font-bold text-teal-600 hover:text-teal-800 bg-teal-50 px-4 py-1.5 rounded-full transition-colors">+ Find Events</Link>
-                </div>
-                
-                {upcomingEvents.length === 0 ? (
-                  <div className="bg-white rounded-[2rem] p-12 text-center border border-slate-100 shadow-sm">
-                    <p className="text-xl font-black text-slate-800 mb-2">Schedule is clear</p>
-                    <p className="text-slate-500 font-medium mb-6">You don't have any upcoming events booked.</p>
-                    <Link href="/events" className="inline-flex items-center gap-2 rounded-full bg-slate-900 text-white px-8 py-3 text-base font-bold hover:bg-slate-800 shadow-md transition-all">
-                      Browse Calendar
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {upcomingEvents.map(reg => (
-                      <Link key={reg.id} href={`/events/${reg.events.id}`} className="flex flex-col justify-between bg-white rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 group">
-                        <div className="flex items-start gap-4 mb-4">
-                          <div className="size-16 rounded-2xl bg-slate-100 shrink-0 overflow-hidden border border-slate-200">
-                            {reg.events.image ? <img src={reg.events.image} alt="" className="size-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="size-full flex items-center justify-center text-2xl">🏆</div>}
-                          </div>
-                          <div className="flex-1 min-w-0 pt-1">
-                            <h4 className="font-black text-slate-800 text-lg line-clamp-2 leading-tight group-hover:text-teal-600 transition-colors">{reg.events.title}</h4>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-slate-50 pt-4">
-                          <div className="flex items-center gap-3">
-                             <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-md ${isToday(new Date(reg.events.date)) ? 'bg-lime-100 text-lime-800' : 'bg-teal-50 text-teal-700'}`}>
-                               {formatEventDate(reg.events.date)}
-                             </span>
-                             <span className="text-sm text-slate-500 font-medium flex items-center gap-1 truncate"><MapPin className="size-3.5" /> {reg.events.location}</span>
-                          </div>
-                          <CheckCircle2 className="size-5 text-emerald-500 opacity-30 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* PAST EVENTS */}
-              {pastEvents.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 ml-2">Completed ({pastEvents.length})</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-75">
-                    {pastEvents.map(reg => (
-                      <Link key={reg.id} href={`/events/${reg.events.id}`} className="flex items-center gap-4 bg-white rounded-3xl p-4 border border-slate-200 hover:border-slate-300 hover:opacity-100 transition-all group grayscale hover:grayscale-0">
-                        <div className="size-14 rounded-xl bg-slate-100 shrink-0 overflow-hidden">
-                          {reg.events.image ? <img src={reg.events.image} alt="" className="size-full object-cover" /> : <div className="size-full flex items-center justify-center text-xl">✅</div>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-600 text-base truncate">{reg.events.title}</h4>
-                          <p className="text-xs text-slate-400 font-medium mt-0.5">{format(new Date(reg.events.date), "MMM d, yyyy")}</p>
-                        </div>
-                      </Link>
-                    ))}
+                    ) : (
+                      <div className="grid gap-4">
+                        {upcomingEvents.map(reg => (
+                          <Link key={reg.id} href={`/events/${reg.events.id}`} className="group flex items-center gap-6 p-4 rounded-3xl bg-slate-50 hover:bg-white border border-transparent hover:border-slate-100 hover:shadow-xl transition-all">
+                            <div className="size-20 rounded-2xl bg-white border border-slate-100 overflow-hidden shrink-0">
+                               <img src={reg.events.image || '/images/event-placeholder.jpg'} className="size-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1">{formatEventDate(reg.events.date)}</p>
+                              <h4 className="text-base font-black text-slate-900 group-hover:text-teal-600 transition-colors">{reg.events.title}</h4>
+                              <p className="text-sm text-slate-500 font-medium flex items-center gap-1 mt-1">
+                                <MapPin className="size-3.5" /> {reg.events.location}
+                              </p>
+                            </div>
+                            <div className="pr-2">
+                               <div className="size-8 rounded-full border-2 border-slate-200 flex items-center justify-center group-hover:border-teal-500 group-hover:bg-teal-50 transition-all">
+                                  <ChevronRight className="size-4 text-slate-300 group-hover:text-teal-600" />
+                               </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* LEAGUES TAB */}
-          {activeTab === "leagues" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between mb-4 ml-2">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">My Leagues</h3>
-                <Link href="/compete?tab=leagues" className="text-sm font-bold text-teal-600 hover:text-teal-800 bg-teal-50 px-4 py-1.5 rounded-full transition-colors">Find more</Link>
-              </div>
               
-              {leagues.length === 0 ? (
-                <div className="bg-white rounded-[2rem] p-12 text-center border border-slate-100 shadow-sm">
-                  <Crown className="size-12 text-slate-200 mx-auto mb-4" />
-                  <p className="text-xl font-black text-slate-800 mb-2">No active leagues</p>
-                  <p className="text-lg font-medium text-slate-500 mb-6">Challenge friends, track results, and climb the table.</p>
-                  <Link href="/compete?tab=leagues" className="inline-block rounded-full bg-teal-600 text-white px-8 py-3.5 text-base font-bold shadow-md hover:bg-teal-700 transition-all">
-                    Browse Leagues
-                  </Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {leagues.map(league => {
-                    const member = leagueMembers.find(m => m.league_id === league.id)
-                    const winRate = member?.matches_played > 0 ? Math.round((member.matches_won / member.matches_played) * 100) : 0
-                    return (
-                      <Link key={league.id} href={`/compete/leagues/${league.id}`} className="group block h-full">
-                        <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:border-teal-300 hover:shadow-md transition-all duration-300 h-full flex flex-col">
-                          <div className="flex justify-between items-start mb-6">
-                            <div className="size-12 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-xl flex items-center justify-center text-xl shadow-sm">
-                              {league.activity_type?.includes('padel') ? '🎾' : league.activity_type?.includes('running') ? '🏃' : '🏆'}
-                            </div>
-                            <div className="text-right">
-                              <span className="text-3xl font-black tabular-nums text-teal-600 leading-none">{member?.total_points || 0}</span>
-                              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Your Points</span>
-                            </div>
-                          </div>
-                          
-                          <h3 className="text-lg font-black text-slate-800 mb-1 group-hover:text-teal-600 transition-colors line-clamp-1">{league.name}</h3>
-                          
-                          <div className="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
-                            {league.is_public ? (
-                              <span className="flex items-center gap-1 text-teal-700 bg-teal-50 px-2 py-0.5 rounded text-xs font-bold"><Globe className="size-3" /> Public</span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-xs font-bold"><Lock className="size-3" /> Private</span>
-                            )}
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{league.scoring_mode} Scoring</span>
-                          </div>
-                        </div>
+              {/* LEAGUES TAB */}
+              {activeTab === "leagues" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   {leagues.length === 0 ? (
+                    <div className="col-span-full bg-white rounded-[2.5rem] p-20 text-center border border-slate-100 shadow-sm">
+                      <Trophy className="size-16 text-slate-100 mx-auto mb-6" />
+                      <h3 className="text-xl font-black text-slate-900 mb-2">Join a League</h3>
+                      <p className="text-slate-500 mb-8">Compete against others and track your rank.</p>
+                      <Link href="/compete?tab=leagues" className="bg-slate-900 text-white px-8 py-3 rounded-full font-black text-sm active:scale-95 transition-all">
+                        Find Leagues
                       </Link>
-                    )
-                  })}
+                    </div>
+                  ) : (
+                    leagues.map(league => {
+                      const member = leagueMembers.find(m => m.league_id === league.id)
+                      return (
+                        <Link key={league.id} href={`/compete/leagues/${league.id}`} className="group bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all">
+                           <div className="flex justify-between items-start mb-6">
+                              <div className="size-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner group-hover:bg-white group-hover:border group-hover:border-teal-100 transition-all">
+                                {league.activity_type?.includes('padel') ? '🎾' : '🏃'}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">League Points</p>
+                                <p className="text-2xl font-black text-teal-600">{member?.total_points || 0}</p>
+                              </div>
+                           </div>
+                           <h4 className="text-xl font-black text-slate-900 mb-4 group-hover:text-teal-600 transition-colors line-clamp-1">{league.name}</h4>
+                           <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                {league.is_public ? <Globe className="size-3" /> : <Lock className="size-3" />}
+                                {league.is_public ? 'Public' : 'Private'}
+                              </span>
+                              <div className="flex items-center gap-1 text-[10px] font-black text-teal-600 uppercase tracking-widest">
+                                View Table <ChevronRight className="size-3" />
+                              </div>
+                           </div>
+                        </Link>
+                      )
+                    })
+                  )}
                 </div>
               )}
             </div>
-          )}
-
+          </div>
         </div>
       </div>
     </div>

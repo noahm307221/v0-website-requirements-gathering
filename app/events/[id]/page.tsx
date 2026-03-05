@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { format, isToday, isTomorrow } from "date-fns"
-import { Calendar, Clock, MapPin, Users, ArrowLeft, CheckCircle2, Ticket, Share2 } from "lucide-react"
-import { sendEventRegistrationEmail } from "@/lib/email"
+import { Calendar, Clock, MapPin, Users, ArrowLeft, CheckCircle2, Ticket, Share2, Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 function formatEventDate(dateStr: string) {
   const d = new Date(dateStr)
@@ -24,8 +24,8 @@ export default function EventDetailsPage() {
   const [user, setUser] = useState<any>(null)
   const [isRegistered, setIsRegistered] = useState(false)
   const [attendees, setAttendees] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     async function loadEventData() {
@@ -55,7 +55,7 @@ export default function EventDetailsPage() {
           setAttendees(regs.map(r => r.profiles).filter(Boolean))
         }
       }
-      setLoading(false)
+      setPageLoading(false)
     }
     loadEventData()
   }, [eventId])
@@ -65,33 +65,70 @@ export default function EventDetailsPage() {
       router.push("/auth/login")
       return
     }
-    
-    setProcessing(true)
-    
+
+    if (loading) return
+
+    setLoading(true)
+
     if (isRegistered) {
-      // Cancel RSVP
-      await supabase.from("registrations").delete().match({ event_id: eventId, user_id: user.id })
-      await sendEventRegistrationEmail(user.email, event.title, format(new Date(event.date), "EEEE d MMMM yyyy"), event.location, event.id)
-      await supabase.rpc('decrement_spots_taken', { event_id: eventId }) // Assuming you have this RPC, or you can update the row
-      setIsRegistered(false)
-      setEvent({ ...event, spots_taken: Math.max(0, event.spots_taken - 1) })
-      setAttendees(attendees.filter(a => a.id !== user.id))
+      // ── CANCEL RSVP ──
+      const { error } = await supabase
+        .from("registrations")
+        .delete()
+        .eq("event_id", event.id)
+        .eq("user_id", user.id)
+
+      if (!error) {
+        setIsRegistered(false)
+        setEvent((prev: any) => ({ ...prev, spots_taken: Math.max(0, prev.spots_taken - 1) }))
+      }
     } else {
-      // Join Event
-      await supabase.from("registrations").insert({ event_id: eventId, user_id: user.id })
-      await supabase.rpc('increment_spots_taken', { event_id: eventId })
+      // Double-check local state before sending
+      if (isRegistered) {
+        setLoading(false)
+        return
+      }
+
+      // ── JOIN EVENT ──
+      const { error } = await supabase
+        .from("registrations")
+        .insert({ event_id: event.id, user_id: user.id })
+
+      if (error) {
+        if (error.code === '23505') {
+          // Already registered — just sync the UI
+          console.log("Already registered, syncing UI...")
+        } else {
+          alert("Error joining event")
+          setLoading(false)
+          return
+        }
+      }
+
+      // Update UI immediately
       setIsRegistered(true)
-      setEvent({ ...event, spots_taken: event.spots_taken + 1 })
-      
-      // Optimistically add user to attendees
-      const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-      if (myProfile) setAttendees([...attendees, myProfile])
+      setEvent((prev: any) => ({ ...prev, spots_taken: prev.spots_taken + 1 }))
+
+      // Fire email — no await so it doesn't hold up the button
+      if (user.email) {
+        fetch('/api/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            title: event.title,
+            location: event.location,
+            date: event.date,
+            time: event.time
+          })
+        }).catch(console.error)
+      }
     }
-    
-    setProcessing(false)
+
+    setLoading(false)
   }
 
-  if (loading) return (
+  if (pageLoading) return (
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
       <div className="size-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
     </div>
@@ -262,33 +299,31 @@ export default function EventDetailsPage() {
               </div>
 
               {/* Action Button */}
-              {isRegistered ? (
-                <div className="space-y-3">
-                  <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl py-4 flex flex-col items-center justify-center gap-1 shadow-inner">
-                    <CheckCircle2 className="size-6 text-emerald-500" />
-                    <span className="font-black text-lg">You're going!</span>
-                  </div>
-                  <button 
-                    onClick={handleRSVP} 
-                    disabled={processing}
-                    className="w-full py-3 text-sm font-bold text-slate-400 hover:text-rose-500 transition-colors disabled:opacity-50"
-                  >
-                    {processing ? "Updating..." : "Cancel my spot"}
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={handleRSVP}
-                  disabled={processing || isFull}
-                  className={`w-full rounded-2xl py-4 text-lg font-black text-white shadow-md transition-all ${
-                    isFull 
-                      ? 'bg-slate-300 cursor-not-allowed' 
-                      : 'bg-teal-600 hover:bg-teal-700 hover:shadow-lg hover:-translate-y-0.5'
-                  }`}
-                >
-                  {processing ? "Processing..." : isFull ? "Waitlist Only" : "Book your spot"}
-                </button>
-              )}
+              <button
+                onClick={handleRSVP}
+                disabled={loading || isFull}
+                className={cn(
+                  "w-full py-4 rounded-2xl font-black transition-all active:scale-95",
+                  isRegistered
+                    ? "bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600"
+                    : isFull
+                      ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                      : "bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-200",
+                  loading && "opacity-70 cursor-not-allowed"
+                )}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="size-4 animate-spin" /> Updating...
+                  </span>
+                ) : isRegistered ? (
+                  "Cancel RSVP"
+                ) : isFull ? (
+                  "Sold Out"
+                ) : (
+                  "Join Event"
+                )}
+              </button>
 
               <p className="text-center text-xs font-medium text-slate-400 mt-6">
                 Free cancellation up to 24 hours before the event starts.

@@ -153,19 +153,18 @@ export default function AdminPage() {
       <div className="bg-muted rounded-xl p-6 mb-10">
         <h2 className="text-xl font-semibold mb-4">Add New Event</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { key: "title", label: "Title" },
-            { key: "category_id", label: "Category (e.g. running, yoga)" },
-            { key: "time", label: "Time (e.g. 09:00)" },
-            { key: "duration", label: "Duration (e.g. 1 hour, 90 mins)" },
-            { key: "location", label: "Location Name" },
-            { key: "address", label: "Full Address (include street, city & postcode for location search)" },
-            { key: "organiser", label: "Organiser" },
-            { key: "price", label: "Price (e.g. Free or $10)" },
-            { key: "spots_total", label: "Total Spots" },
-          ].map(({ key, label }) => (
+          {["title", "category_id", "time", "location", "address", "organiser", "price", "spots_total"].map((key) => (
             <div key={key}>
-              <label className="text-sm text-muted-foreground mb-1 block">{label}</label>
+              <label className="text-sm text-muted-foreground mb-1 block">
+                {key === "title" && "Title"}
+                {key === "category_id" && "Category (e.g. running, yoga)"}
+                {key === "time" && "Time (e.g. 09:00)"}
+                {key === "location" && "Location Name"}
+                {key === "address" && "Full Address (include street, city & postcode for location search)"}
+                {key === "organiser" && "Organiser"}
+                {key === "price" && "Price (e.g. Free or $10)"}
+                {key === "spots_total" && "Total Spots"}
+              </label>
               <input
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                 value={(form as any)[key]}
@@ -173,6 +172,20 @@ export default function AdminPage() {
               />
             </div>
           ))}
+
+          {/* Duration input (number) */}
+          <div key="duration">
+            <label className="text-sm text-muted-foreground mb-1 block">
+              Duration (add in minutes, e.g. 90)
+            </label>
+            <input
+              type="number"
+              placeholder="Duration in minutes (e.g. 90)"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+              value={form.duration}
+              onChange={e => setForm({ ...form, duration: e.target.value })}
+            />
+          </div>
 
           {/* Date picker */}
           <div>

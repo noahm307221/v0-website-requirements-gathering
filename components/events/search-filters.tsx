@@ -1,6 +1,6 @@
 "use client"
 
-import { SlidersHorizontal, X } from "lucide-react"
+import { SlidersHorizontal, X, ChevronDown, Zap, Target } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -12,15 +12,16 @@ import { categories } from "@/lib/data"
 import { cn } from "@/lib/utils"
 
 interface SearchFiltersProps {
-  search: string
-  onSearchChange: (value: string) => void
   selectedCategory: string
   onCategoryChange: (value: string) => void
   sortBy: string
   onSortChange: (value: string) => void
   resultCount: number
   onClearAll?: () => void
-  hasActiveFilters: boolean // Added this to perfectly track all filter states
+  hasActiveFilters: boolean
+  radius: number
+  onRadiusChange: (value: number) => void
+  locationEnabled: boolean
 }
 
 export function SearchFilters({
@@ -30,78 +31,106 @@ export function SearchFilters({
   onSortChange,
   resultCount,
   onClearAll,
-  hasActiveFilters
+  hasActiveFilters,
+  radius,
+  onRadiusChange,
+  locationEnabled
 }: SearchFiltersProps) {
 
   return (
-    <div className="flex flex-col gap-6 pt-5 border-t border-slate-100 mt-2">
+    <div className="flex flex-col gap-6 w-full">
       
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        
-        {/* Category filter pills - Made smaller and more compact */}
-        <div className="flex flex-wrap items-center gap-2">
+      {/* ROW 1: SPREAD OUT SPORTS MODALITIES */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => onCategoryChange("all")}
+          className={cn(
+            "rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all whitespace-nowrap border",
+            selectedCategory === "all"
+              ? "bg-slate-900 text-white border-slate-900 shadow-xl scale-105"
+              : "bg-white border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300"
+          )}
+        >
+          All Modalities
+        </button>
+        {categories.map((cat) => (
           <button
-            onClick={() => onCategoryChange("all")}
+            key={cat.id}
+            onClick={() => onCategoryChange(selectedCategory === cat.id ? "all" : cat.id)}
             className={cn(
-              "rounded-full px-4 py-1.5 text-xs font-bold capitalize transition-all shadow-sm",
-              selectedCategory === "all"
-                ? "bg-teal-600 text-white shadow-md scale-105"
-                : "bg-white border border-slate-200 text-slate-500 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50"
+              "rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all whitespace-nowrap border",
+              selectedCategory === cat.id
+                ? "bg-slate-900 text-white border-slate-900 shadow-xl scale-105"
+                : "bg-white border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300"
             )}
           >
-            All
+            {cat.name}
           </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() =>
-                onCategoryChange(selectedCategory === cat.id ? "all" : cat.id)
-              }
-              className={cn(
-                "rounded-full px-4 py-1.5 text-xs font-bold capitalize transition-all shadow-sm",
-                selectedCategory === cat.id
-                  ? "bg-teal-600 text-white shadow-md scale-105"
-                  : "bg-white border border-slate-200 text-slate-500 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50"
-              )}
-            >
-              {cat.name}
-            </button>
-          ))}
+        ))}
+      </div>
+
+      {/* ROW 2: ANALYTICS & CONTROLS */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pt-4 border-t border-slate-100/50">
+        
+        <div className="flex items-center gap-6">
+          {/* Result Count Module */}
+          <div className="flex items-center gap-2">
+            <div className="size-2 bg-teal-500 rounded-full animate-pulse" />
+            <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.3em]">
+              {resultCount} {resultCount === 1 ? "Module" : "Modules"} Detected
+            </p>
+          </div>
+
+          {/* Range Matrix (Visible when location is active) */}
+          {locationEnabled && (
+            <div className="flex items-center gap-3 bg-slate-900 text-white px-4 py-2 rounded-xl shadow-lg shadow-slate-200">
+              <Target className="size-3 text-teal-400" />
+              <span className="text-[9px] font-black uppercase tracking-widest mr-2">Range Matrix:</span>
+              <div className="flex gap-3">
+                {[5, 10, 25, 50].map(r => (
+                  <button 
+                    key={r} 
+                    onClick={() => onRadiusChange(r)}
+                    className={cn(
+                      "text-[9px] font-black transition-all",
+                      radius === r ? "text-teal-400 scale-125 underline decoration-2 underline-offset-4" : "text-slate-400 hover:text-white"
+                    )}
+                  >
+                    {r}M
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Sort Dropdown */}
-        <Select value={sortBy} onValueChange={onSortChange}>
-          <SelectTrigger className="h-10 w-full lg:w-48 rounded-xl bg-white border border-slate-200 shadow-sm px-4 text-sm font-bold text-slate-700 hover:border-teal-300 transition-all focus:ring-4 focus:ring-teal-50 focus:border-teal-400 focus:outline-none">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="size-4 text-teal-600" />
-              <SelectValue placeholder="Sort by" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-slate-100 shadow-xl p-2">
-            <SelectItem value="date" className="rounded-xl focus:bg-teal-50 focus:text-teal-800 cursor-pointer font-bold py-2">Soonest first</SelectItem>
-            <SelectItem value="spots" className="rounded-xl focus:bg-teal-50 focus:text-teal-800 cursor-pointer font-bold py-2">Most spots left</SelectItem>
-            <SelectItem value="popular" className="rounded-xl focus:bg-teal-50 focus:text-teal-800 cursor-pointer font-bold py-2">Most popular</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Action Controls */}
+        <div className="flex items-center gap-4">
+          <Select value={sortBy} onValueChange={onSortChange}>
+            <SelectTrigger className="h-12 w-52 bg-white border border-slate-200 rounded-xl px-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:border-teal-500 transition-all outline-none shadow-sm">
+               <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="size-3.5 text-teal-500" />
+                  <SelectValue placeholder="Sort Matrix" />
+               </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-100 p-2 shadow-2xl">
+              <SelectItem value="date" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 cursor-pointer">Soonest</SelectItem>
+              <SelectItem value="spots" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 cursor-pointer">Capacity</SelectItem>
+              <SelectItem value="popular" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 cursor-pointer">Trending</SelectItem>
+              <SelectItem value="distance" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 cursor-pointer">Proximity</SelectItem>
+            </SelectContent>
+          </Select>
 
+          {hasActiveFilters && (
+            <button 
+              onClick={onClearAll} 
+              className="flex items-center gap-2 text-[10px] font-black text-rose-500 uppercase tracking-widest px-5 py-3 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100"
+            >
+               <X className="size-3.5" /> Reset Matrix
+            </button>
+          )}
+        </div>
       </div>
-
-      {/* Active filter info & Global Clear (Only shows if filters are actually applied) */}
-      <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-          {resultCount} {resultCount === 1 ? "event" : "events"} found
-        </p>
-        {hasActiveFilters && onClearAll && (
-          <button 
-            onClick={onClearAll}
-            className="flex items-center gap-1.5 text-sm font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-full transition-colors"
-          >
-            <X className="size-4" />
-            Clear all filters
-          </button>
-        )}
-      </div>
-      
     </div>
   )
 }
