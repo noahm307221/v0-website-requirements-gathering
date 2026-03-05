@@ -3,10 +3,9 @@
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import { type Event } from "@/lib/data"
 import { SearchFilters } from "@/components/events/search-filters"
 import { EventsGrid } from "@/components/events/events-grid"
-import { MapPin, Loader2, Navigation, X, Search, CheckCircle2 } from "lucide-react"
+import { MapPin, Loader2, Navigation, X, Search, CheckCircle2, ChevronRight } from "lucide-react"
 
 function getDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 3958.8 // Earth radius in miles
@@ -38,7 +37,6 @@ export function EventsContent() {
   const [detectingLocation, setDetectingLocation] = useState(false)
   const [locationLabel, setLocationLabel] = useState("")
 
-  // Master check for any active filters
   const hasActiveFilters = search !== "" || selectedCategory !== "all" || locationEnabled || sortBy !== "date"
 
   useEffect(() => {
@@ -173,151 +171,107 @@ export function EventsContent() {
     setUserLon(null)
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[50vh]">
-      <div className="size-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return null
 
   return (
     <>
-      <div className="bg-white p-5 sm:p-7 rounded-[2rem] shadow-sm border border-slate-100 mb-8 transition-all hover:shadow-md">
-        
-        {/* Top Row: The Inputs */}
-        <div className="flex flex-col md:flex-row gap-4">
-          
-          {/* Keyword Search */}
-          <div className="flex-1 flex items-center gap-3 px-4 py-3.5 bg-slate-50 rounded-2xl border border-transparent focus-within:border-teal-300 focus-within:bg-white transition-colors">
-            <Search className="size-5 text-teal-600 shrink-0" />
+      {/* ── SEARCH ── */}
+      <div className="mb-8">
+
+        {/* Main search row */}
+        <div className="flex flex-col md:flex-row gap-3 mb-3">
+
+          {/* Keyword */}
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
             <input
-              className="flex-1 bg-transparent border-none outline-none text-base text-slate-800 placeholder:text-slate-400 font-medium w-full"
-              placeholder="Search events, sports, or clubs..."
+              className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-10 py-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-500/10 shadow-sm transition-all"
+              placeholder="Search events, sports, venues..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
             />
             {search && (
-              <button onClick={() => setSearch("")} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
-                <X className="size-4 text-slate-400" />
+              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-100 transition-colors">
+                <X className="size-3.5 text-slate-400" />
               </button>
             )}
           </div>
 
-          {/* Location Area - Swaps between Input and Confirmed Badge */}
+          {/* Location */}
           {locationEnabled ? (
-            <div className="flex-1 flex items-center justify-between gap-3 px-5 py-3.5 bg-teal-50 rounded-2xl border border-teal-200 shadow-inner transition-all animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <CheckCircle2 className="size-5 text-teal-600 shrink-0" />
-                <span className="text-base font-bold text-teal-900 truncate">
-                  Area set to: <span className="capitalize">{locationLabel}</span>
-                </span>
-              </div>
+            <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 rounded-2xl px-4 py-3 shadow-sm md:min-w-[220px]">
+              <CheckCircle2 className="size-4 text-teal-600 shrink-0" />
+              <span className="text-sm font-bold text-teal-800 flex-1 truncate capitalize">{locationLabel}</span>
               <button
-                onClick={() => {
-                  setLocationEnabled(false)
-                  setLocationInput("")
-                  setLocationLabel("")
-                }}
-                className="text-sm font-bold text-teal-700 hover:text-teal-900 bg-teal-100/50 hover:bg-teal-200 px-4 py-1.5 rounded-full transition-colors shrink-0"
-              >
-                Change
+                onClick={() => { setLocationEnabled(false); setLocationInput(""); setLocationLabel("") }}
+                className="p-1 rounded-full hover:bg-teal-100 transition-colors shrink-0">
+                <X className="size-3.5 text-teal-600" />
               </button>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-0">
-              <div className="flex-1 flex items-center gap-3 px-4 py-3.5 bg-slate-50 rounded-2xl border border-transparent focus-within:border-teal-300 focus-within:bg-white transition-colors">
-                <MapPin className="size-5 text-teal-600 shrink-0" />
-                <input
-                  className="flex-1 bg-transparent border-none outline-none text-base text-slate-800 placeholder:text-slate-400 font-medium w-full"
-                  placeholder="Where? (City or postcode)"
-                  value={locationInput}
-                  onChange={(e) => setLocationInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && searchLocation()}
-                />
+            <div className="relative group md:w-72">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
+              <input
+                className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-20 py-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-500/10 shadow-sm transition-all"
+                placeholder="City or postcode"
+                value={locationInput}
+                onChange={e => setLocationInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && searchLocation()}
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
                 {locationInput && (
-                  <button onClick={() => setLocationInput("")} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
-                    <X className="size-4 text-slate-400" />
+                  <button onClick={searchLocation} className="bg-teal-600 text-white rounded-xl px-3 py-1.5 text-xs font-bold hover:bg-teal-700 transition-colors">
+                    Go
                   </button>
                 )}
-                
-                <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
-                
                 <button
                   onClick={detectLocation}
                   disabled={detectingLocation}
-                  className="hidden sm:flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-slate-500 font-bold text-sm hover:text-teal-700 hover:bg-teal-50 transition-colors disabled:opacity-50"
-                >
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+                  title="Use my location">
                   {detectingLocation ? <Loader2 className="size-4 animate-spin text-teal-600" /> : <Navigation className="size-4" />}
-                  <span>Near Me</span>
-                </button>
-                
-                <button
-                  onClick={searchLocation}
-                  className="hidden sm:block whitespace-nowrap rounded-xl bg-teal-600 text-white px-5 py-2 text-sm font-bold hover:bg-teal-700 transition-colors shadow-sm"
-                >
-                  Search Area
-                </button>
-              </div>
-
-              {/* Mobile Action Buttons (Visible only on small screens when input is active) */}
-              <div className="flex gap-2 sm:hidden mt-2">
-                <button
-                  onClick={detectLocation}
-                  disabled={detectingLocation}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-100 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:border-teal-200 hover:text-teal-700 transition-colors disabled:opacity-50"
-                >
-                  {detectingLocation ? <Loader2 className="size-4 animate-spin text-teal-600" /> : <Navigation className="size-4" />}
-                  Near Me
-                </button>
-                <button
-                  onClick={searchLocation}
-                  className="flex-1 rounded-2xl bg-teal-600 text-white px-5 py-3 text-sm font-bold hover:bg-teal-700 transition-colors shadow-sm"
-                >
-                  Search Area
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Radius Selector */}
+        {/* Radius pills — only when location active */}
         {locationEnabled && (
-          <div className="mt-5 flex flex-wrap items-center gap-3 px-2 animate-in fade-in slide-in-from-top-2 duration-300">
-            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-              Search Radius
-            </span>
-            <div className="flex flex-wrap gap-2 bg-slate-50 p-1.5 rounded-[1.5rem] border border-slate-100 shadow-inner">
-              {[5, 10, 25, 50].map(r => (
-                <button
-                  key={r}
-                  onClick={() => setRadius(r)}
-                  className={`rounded-full px-4 py-1.5 text-xs sm:text-sm font-bold transition-all ${
-                    radius === r
-                      ? "bg-teal-600 text-white shadow-md scale-105"
-                      : "bg-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200"
-                  }`}
-                >
-                  {r} miles
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-2 mb-3 animate-in fade-in slide-in-from-top-1 duration-200">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Within</span>
+            {[5, 10, 25, 50].map(r => (
+              <button key={r} onClick={() => setRadius(r)}
+                className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${
+                  radius === r ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"
+                }`}>
+                {r} mi
+              </button>
+            ))}
           </div>
         )}
 
-        {/* Categories and Sort */}
-        <SearchFilters
-          search={search}
-          onSearchChange={setSearch}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          resultCount={filteredEvents.length}
-          onClearAll={clearFilters}
-          hasActiveFilters={hasActiveFilters}
-        />
+        {/* Category pills + sort row */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            <SearchFilters
+              search={search}
+              onSearchChange={setSearch}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              resultCount={filteredEvents.length}
+              onClearAll={clearFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+          </div>
+        </div>
+
       </div>
-      
-      <div className="mt-8">
+
+      {/* ── EVENTS GRID ── */}
+      <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
         <EventsGrid events={filteredEvents} onClearFilters={clearFilters} />
       </div>
     </>
