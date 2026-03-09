@@ -42,7 +42,7 @@ export function EventCard({ event, className }: EventCardProps) {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-emerald-500" />
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-400" />
           )}
           
           {/* Subtle gradient overlay to make tags pop */}
@@ -50,7 +50,7 @@ export function EventCard({ event, className }: EventCardProps) {
           
           {/* Top Tags (Category & Date) */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2">
-            <span className="bg-lime-400 text-slate-900 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm">
+            <span className="bg-lime-300 text-slate-800 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm">
               {formatEventDate(event.date)}
             </span>
             
@@ -76,7 +76,7 @@ export function EventCard({ event, className }: EventCardProps) {
         {/* Card Content */}
         <div className="flex flex-col flex-1 p-6 sm:p-7">
           <div className="mb-4">
-            <h3 className="text-xl font-black leading-tight text-slate-800 line-clamp-2 group-hover:text-teal-600 transition-colors">
+            <h3 className="text-xl font-black leading-tight text-slate-800 line-clamp-2 group-hover:text-teal-500 transition-colors">
               {event.title}
             </h3>
             <p className="mt-2 line-clamp-2 text-sm font-medium leading-relaxed text-slate-500">
@@ -113,7 +113,7 @@ export function EventCard({ event, className }: EventCardProps) {
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-500",
-                  almostFull ? "bg-rose-500" : "bg-gradient-to-r from-teal-400 to-emerald-500",
+                  almostFull ? "bg-rose-400" : "bg-gradient-to-r from-teal-400 to-cyan-400",
                 )}
                 style={{
                   width: `${(event.spotsTaken / event.spotsTotal) * 100}%`,
