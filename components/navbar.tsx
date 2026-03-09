@@ -83,11 +83,11 @@ export function Navbar() {
         {/* ── LEFT: BRAND ── */}
         <div className="flex w-1/4 items-center justify-start">
           <Link href="/" className="group flex items-center gap-3 active:scale-95 transition-all">
-            <div className="size-10 bg-slate-900 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-slate-200">
-               <Zap className="text-teal-400 size-5 fill-teal-400" />
+            <div className="size-10 bg-teal-500 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-teal-200">
+               <Zap className="text-white size-5 fill-white" />
             </div>
             <span className="font-black text-2xl tracking-[-0.06em] text-slate-900">
-              balance<span className="text-teal-500">.</span>
+              balance<span className="text-teal-400">.</span>
             </span>
           </Link>
         </div>
@@ -102,12 +102,12 @@ export function Navbar() {
                 href={link.href}
                 className={cn(
                   "relative text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 active:scale-95",
-                  isActive ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+                  isActive ? "text-slate-900" : "text-slate-400 hover:text-teal-600"
                 )}
               >
                 {link.label}
                 {isActive && (
-                  <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-teal-500 animate-in zoom-in duration-300" />
+                  <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-teal-400 animate-in zoom-in duration-300" />
                 )}
               </Link>
             )
@@ -123,8 +123,8 @@ export function Navbar() {
           {user ? (
             <>
               {/* Notification Bell */}
-              <Link href="/notifications" className="relative size-10 rounded-2xl bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-colors hidden md:flex">
-                <Bell className="size-5 text-slate-600" />
+              <Link href="/notifications" className="relative size-10 rounded-2xl bg-teal-50 flex items-center justify-center hover:bg-teal-100 transition-colors hidden md:flex">
+                <Bell className="size-5 text-teal-600" />
                 {unreadCount > 0 && (
                   <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-rose-500 border-2 border-white" />
                 )}
@@ -133,7 +133,7 @@ export function Navbar() {
               {/* Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-3 bg-slate-900 p-1 pr-4 rounded-2xl hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-slate-200">
+                  <button className="flex items-center gap-3 bg-teal-500 p-1 pr-4 rounded-2xl hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-teal-200">
                     <div className="size-8 rounded-[0.8rem] bg-white overflow-hidden shrink-0">
                       {user.user_metadata?.avatar_url ? (
                         <img src={user.user_metadata.avatar_url} className="size-full object-cover" />
@@ -173,10 +173,10 @@ export function Navbar() {
             </>
           ) : (
             <div className="hidden md:flex items-center gap-4">
-              <Link href="/auth/login" className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900">
+              <Link href="/auth/login" className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-teal-600">
                 Log in
               </Link>
-              <Link href="/auth/signup" className="flex items-center gap-2 rounded-full bg-slate-900 px-7 py-3 text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-xl hover:bg-slate-800 transition-all active:scale-95">
+              <Link href="/auth/signup" className="flex items-center gap-2 rounded-full bg-teal-500 px-7 py-3 text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-xl hover:bg-teal-400 transition-all active:scale-95">
                 Join <ArrowUpRight className="size-3" />
               </Link>
             </div>
@@ -185,15 +185,15 @@ export function Navbar() {
           {/* Mobile Menu */}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <button className="xl:hidden p-3 bg-slate-50 rounded-2xl text-slate-900">
+              <button className="xl:hidden p-3 bg-teal-50 rounded-2xl text-teal-700">
                 <Menu className="size-6" />
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80 rounded-l-[3rem] border-l-0 shadow-2xl p-8 bg-white/95 backdrop-blur-xl">
               <SheetHeader className="mb-10 border-b border-slate-100 pb-6">
                 <SheetTitle className="text-left flex items-center gap-3">
-                  <div className="size-8 bg-slate-900 rounded-xl flex items-center justify-center">
-                    <Zap className="text-teal-400 size-4 fill-teal-400" />
+                  <div className="size-8 bg-teal-500 rounded-xl flex items-center justify-center">
+                    <Zap className="text-white size-4 fill-white" />
                   </div>
                   <span className="font-black text-xl text-slate-900 tracking-tighter italic">BALANCE.</span>
                 </SheetTitle>
@@ -206,7 +206,7 @@ export function Navbar() {
                     onClick={() => setOpen(false)}
                     className={cn(
                       "rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-[0.2em] transition-all",
-                      pathname === link.href ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"
+                      pathname === link.href ? "bg-teal-500 text-white" : "text-slate-400 hover:bg-teal-50 hover:text-teal-700"
                     )}
                   >
                     {link.label}
