@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
@@ -17,7 +17,7 @@ const CATEGORIES = ["all", "padel", "running", "yoga", "tennis", "cycling", "cro
 const TABS = ["pulse", "communities", "messages"] as const
 type Tab = typeof TABS[number]
 
-export default function CommunityPage() {
+function CommunityPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState<any>(null)
@@ -620,5 +620,13 @@ export default function CommunityPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function CommunityPage() {
+  return (
+    <Suspense>
+      <CommunityPageContent />
+    </Suspense>
   )
 }
