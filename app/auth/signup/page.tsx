@@ -45,11 +45,13 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-6">
-        <div className="w-full max-w-sm rounded-2xl border p-8 text-center">
+      <div className="relative flex min-h-screen items-center justify-center px-6 bg-gradient-to-br from-orange-50 via-white to-teal-50 overflow-hidden">
+        <div className="absolute top-[-20%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-100/50 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] left-[-5%] w-[400px] h-[400px] rounded-full bg-orange-100/50 blur-[100px] pointer-events-none" />
+        <div className="relative z-10 w-full max-w-sm rounded-2xl border border-white/60 bg-white/80 backdrop-blur-xl shadow-xl shadow-slate-200/60 p-8 text-center">
           <div className="text-4xl mb-4">📧</div>
-          <h1 className="text-2xl font-bold mb-2">Check your email</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-2">Check your email</h1>
+          <p className="text-sm text-slate-500">
             We've sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
           </p>
         </div>
@@ -58,10 +60,19 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm rounded-2xl border p-8">
-        <h1 className="text-2xl font-bold mb-1">Create an account</h1>
-        <p className="text-sm text-muted-foreground mb-6">Join Balance and discover events near you</p>
+    <div className="relative flex min-h-screen items-center justify-center px-6 bg-gradient-to-br from-orange-50 via-white to-teal-50 overflow-hidden">
+      <div className="absolute top-[-20%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-100/50 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] left-[-5%] w-[400px] h-[400px] rounded-full bg-orange-100/50 blur-[100px] pointer-events-none" />
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-white/60 bg-white/80 backdrop-blur-xl shadow-xl shadow-slate-200/60 p-8">
+        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-teal-700 mb-5 rounded-full bg-teal-50 border border-teal-100 px-4 py-2">
+          <span className="relative flex size-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+            <span className="relative inline-flex rounded-full size-2 bg-teal-500" />
+          </span>
+          Balance
+        </div>
+        <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-1">Create an account</h1>
+        <p className="text-sm text-slate-500 mb-6">Join Balance and discover events near you</p>
 
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 

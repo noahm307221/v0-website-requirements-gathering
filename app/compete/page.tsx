@@ -96,33 +96,44 @@ export default function CompeteHubPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="mx-auto max-w-5xl px-6 py-10">
 
-        {/* ── HEADER ── */}
-        <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+      {/* ── HERO BANNER ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-teal-50 border-b border-slate-100/60">
+        <div className="absolute top-[-30%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-100/40 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[-30%] left-[-5%] w-[400px] h-[400px] rounded-full bg-orange-100/40 blur-[100px] pointer-events-none" />
+        <div className="relative z-10 mx-auto max-w-5xl px-6 py-14 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-teal-600">Compete</p>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl leading-none mb-3">
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-teal-700 mb-5 rounded-full bg-white/80 border border-teal-100 px-4 py-2 shadow-sm">
+              <span className="relative flex size-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                <span className="relative inline-flex rounded-full size-2 bg-teal-500" />
+              </span>
+              Compete
+            </div>
+            <h1 className="font-black tracking-tight leading-[1.05] text-slate-900 text-4xl md:text-5xl mb-4">
               Competition{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-500">Hub</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-400">Hub</span>
             </h1>
-            <p className="text-base font-medium text-slate-500">
+            <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-xl">
               Climb the city rankings, join private leagues, and log your hustle.
             </p>
           </div>
           <div className="flex flex-wrap gap-3 shrink-0">
             {activeTab === "leagues" && (
               <Link href="/compete/leagues/create"
-                className="flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-5 py-2.5 text-sm font-bold text-teal-700 hover:bg-teal-100 transition-colors">
+                className="flex items-center gap-2 rounded-full border border-teal-200 bg-white px-5 py-2.5 text-sm font-bold text-teal-700 hover:bg-teal-50 transition-colors shadow-sm">
                 <Plus className="size-4" /> Create League
               </Link>
             )}
             <Link href="/compete/log"
-              className="flex items-center gap-2 rounded-full bg-slate-900 text-white px-5 py-2.5 text-sm font-bold hover:bg-teal-600 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-200/50">
+              className="flex items-center gap-2 rounded-full bg-teal-500 text-white px-5 py-2.5 text-sm font-bold hover:bg-teal-400 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-200/50">
               <Activity className="size-4" /> Log Activity
             </Link>
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl px-6 py-10">
 
         {/* ── TABS ── */}
         <div className="flex gap-1 border-b border-slate-200 mb-8">
@@ -216,8 +227,8 @@ export default function CompeteHubPage() {
                       <button key={p} onClick={() => setPeriod(p)}
                         className={`rounded-full px-4 py-1.5 text-sm font-bold transition-all ${
                           period === p
-                            ? "bg-slate-900 text-white"
-                            : "text-slate-400 hover:text-slate-700"
+                            ? "bg-teal-500 text-white"
+                            : "text-slate-400 hover:text-teal-600"
                         }`}>
                         {p === "alltime" ? "All Time" : p === "month" ? "This Month" : "This Year"}
                       </button>
@@ -228,10 +239,10 @@ export default function CompeteHubPage() {
                 {/* Leaderboard */}
                 {leaderboard.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-4 py-20 text-center bg-white rounded-2xl border border-slate-100">
-                    <Crown className="size-10 text-slate-200" />
+                    <Crown className="size-10 text-teal-200" />
                     <h3 className="text-xl font-black text-slate-800">No activity yet</h3>
                     <p className="text-slate-500 text-sm max-w-xs">No one has logged anything for this period. Be the first.</p>
-                    <Link href="/compete/log" className="mt-2 rounded-full bg-teal-600 text-white px-6 py-2.5 text-sm font-bold hover:bg-teal-700 transition-colors">
+                    <Link href="/compete/log" className="mt-2 rounded-full bg-teal-500 text-white px-6 py-2.5 text-sm font-bold hover:bg-teal-400 transition-colors">
                       Log activity
                     </Link>
                   </div>
@@ -318,13 +329,13 @@ export default function CompeteHubPage() {
 
                 {filteredLeagues.length === 0 ? (
                   <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
-                    <Trophy className="size-10 text-slate-200 mx-auto mb-3" />
+                    <Trophy className="size-10 text-teal-200 mx-auto mb-3" />
                     <h3 className="text-lg font-black text-slate-800 mb-2">No leagues found</h3>
                     <p className="text-slate-500 text-sm max-w-xs mx-auto mb-5">
                       {leagueView === "mine" ? "You haven't joined any leagues yet." : "No public leagues match your search."}
                     </p>
                     {leagueView === "mine" && (
-                      <Link href="/compete/leagues/create" className="inline-flex items-center gap-2 rounded-full bg-teal-600 text-white px-6 py-2.5 text-sm font-bold hover:bg-teal-700 transition-colors">
+                      <Link href="/compete/leagues/create" className="inline-flex items-center gap-2 rounded-full bg-teal-500 text-white px-6 py-2.5 text-sm font-bold hover:bg-teal-400 transition-colors">
                         <Plus className="size-4" /> Create a league
                       </Link>
                     )}

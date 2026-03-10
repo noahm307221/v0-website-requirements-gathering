@@ -159,21 +159,19 @@ export default function ProfilePage() {
   const progressPct = level.max !== Infinity ? Math.min(((totalPoints - level.min) / (level.max - level.min)) * 100, 100) : 100
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[70vh] bg-slate-50/50">
-      <div className="size-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-[70vh] bg-[#F5FFFC]">
+      <div className="size-10 border-4 border-teal-200 border-t-teal-500 rounded-full animate-spin" />
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32">
+    <div className="min-h-screen bg-[#F5FFFC] pb-32">
       
       {/* ── PROFILE HERO ── */}
-      <div className="relative h-64 w-full bg-slate-900 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/20 to-emerald-600/20" />
-        <div className="absolute inset-0 backdrop-blur-3xl" />
-        {/* Abstract background shapes */}
-        <div className="absolute -top-24 -right-24 size-96 rounded-full bg-teal-500/10 blur-3xl animate-pulse" />
-        <div className="absolute -bottom-24 -left-24 size-96 rounded-full bg-emerald-500/10 blur-3xl animate-pulse delay-700" />
+      <div className="relative h-64 w-full overflow-hidden bg-gradient-to-br from-orange-50 via-white to-teal-100">
+        <div className="absolute top-[-20%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-200/50 blur-[80px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] left-[-5%] w-[400px] h-[400px] rounded-full bg-orange-100/60 blur-[80px] pointer-events-none" />
+        <div className="absolute top-8 left-1/3 w-[300px] h-[300px] rounded-full bg-teal-100/40 blur-[60px] pointer-events-none" />
       </div>
 
       <div className="mx-auto max-w-5xl px-6 -mt-32 relative z-10">
@@ -191,7 +189,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               {editing && (
-                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-slate-900 p-3 shadow-xl hover:bg-teal-600 transition-all duration-300 border-4 border-white active:scale-90">
+                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-teal-500 p-3 shadow-xl hover:bg-teal-400 transition-all duration-300 border-4 border-white active:scale-90">
                   <Camera className="size-5 text-white" />
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                 </label>
@@ -235,7 +233,7 @@ export default function ProfilePage() {
               onClick={() => editing ? handleSave() : setEditing(true)} 
               className={cn(
                 "flex-1 md:flex-none flex items-center justify-center gap-2 rounded-2xl px-8 py-3.5 text-sm font-black transition-all active:scale-95 shadow-lg",
-                editing ? "bg-teal-600 text-white hover:bg-teal-700 shadow-teal-200" : "bg-slate-900 text-white hover:bg-slate-800 shadow-slate-200"
+                editing ? "bg-teal-500 text-white hover:bg-teal-400 shadow-teal-200" : "bg-teal-500 text-white hover:bg-teal-400 shadow-teal-200"
               )}
             >
               {editing ? (saving ? "Saving..." : "Save Profile") : "Edit Profile"}
@@ -307,9 +305,9 @@ export default function ProfilePage() {
                       onClick={() => editing && toggleCategory(cat)}
                       className={cn(
                         "rounded-xl px-4 py-2 text-xs font-bold capitalize transition-all duration-300",
-                        isSelected 
-                          ? "bg-slate-900 text-white shadow-lg shadow-slate-200" 
-                          : "bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        isSelected
+                          ? "bg-teal-500 text-white shadow-lg shadow-teal-200"
+                          : "bg-teal-50 text-slate-400 hover:text-teal-600 hover:bg-teal-100"
                       )}
                     >
                       {cat}
@@ -334,9 +332,9 @@ export default function ProfilePage() {
                     onClick={() => setActiveTab(tab)}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95",
-                      isActive 
-                        ? "bg-slate-900 text-white shadow-lg" 
-                        : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                      isActive
+                        ? "bg-teal-500 text-white shadow-lg shadow-teal-200"
+                        : "text-slate-400 hover:text-teal-600 hover:bg-teal-50"
                     )}
                   >
                     <Icon className="size-3.5" />
@@ -412,7 +410,7 @@ export default function ProfilePage() {
                       <div className="size-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-3xl">🏜️</div>
                       <h3 className="text-xl font-black text-slate-900 mb-2">No activities yet</h3>
                       <p className="text-slate-500 mb-8">Log your first session to start earning points.</p>
-                      <Link href="/compete/log" className="bg-slate-900 text-white px-8 py-3 rounded-full font-black text-sm active:scale-95 transition-all">
+                      <Link href="/compete/log" className="bg-teal-500 text-white px-8 py-3 rounded-full font-black text-sm active:scale-95 transition-all hover:bg-teal-400">
                         Log Activity
                       </Link>
                     </div>
@@ -447,7 +445,7 @@ export default function ProfilePage() {
                       <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
                         <Calendar className="size-5 text-teal-500" /> Upcoming
                       </h3>
-                      <Link href="/events" className="size-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-teal-600 transition-all active:scale-90">
+                      <Link href="/events" className="size-10 bg-teal-500 text-white rounded-full flex items-center justify-center hover:bg-teal-400 transition-all active:scale-90">
                         <Plus className="size-5" />
                       </Link>
                     </div>
@@ -491,7 +489,7 @@ export default function ProfilePage() {
                       <Trophy className="size-16 text-slate-100 mx-auto mb-6" />
                       <h3 className="text-xl font-black text-slate-900 mb-2">Join a League</h3>
                       <p className="text-slate-500 mb-8">Compete against others and track your rank.</p>
-                      <Link href="/compete?tab=leagues" className="bg-slate-900 text-white px-8 py-3 rounded-full font-black text-sm active:scale-95 transition-all">
+                      <Link href="/compete?tab=leagues" className="bg-teal-500 text-white px-8 py-3 rounded-full font-black text-sm active:scale-95 transition-all hover:bg-teal-400">
                         Find Leagues
                       </Link>
                     </div>

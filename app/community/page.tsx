@@ -209,23 +209,31 @@ export default function CommunityPage() {
 
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[70vh] bg-slate-50/50">
-      <div className="size-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-[70vh] bg-[#F5FFFC]">
+      <div className="size-12 border-4 border-teal-200 border-t-teal-500 rounded-full animate-spin" />
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-slate-50/50 font-sans pb-24">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-16">
-        
-        {/* ── BOLD HEADER ── */}
-        <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+    <div className="min-h-screen bg-[#F5FFFC] font-sans pb-24">
+
+      {/* ── HERO BANNER ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-teal-50 border-b border-slate-100/60">
+        <div className="absolute top-[-30%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-100/40 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[-30%] left-[-5%] w-[400px] h-[400px] rounded-full bg-orange-100/40 blur-[100px] pointer-events-none" />
+        <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 py-14 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-teal-600">Connect</p>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl mb-4">
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-teal-700 mb-5 rounded-full bg-white/80 border border-teal-100 px-4 py-2 shadow-sm">
+              <span className="relative flex size-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                <span className="relative inline-flex rounded-full size-2 bg-teal-500" />
+              </span>
+              Connect
+            </div>
+            <h1 className="font-black tracking-tight leading-[1.05] text-slate-900 text-4xl md:text-5xl mb-4">
               Social{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-500">
-                Hub.
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-400">
+                Hub
               </span>
             </h1>
             <p className="max-w-xl text-lg font-medium leading-relaxed text-slate-500">
@@ -235,19 +243,22 @@ export default function CommunityPage() {
           {user && activeTab === "communities" && (
             <Link
               href="/community/create"
-              className="flex items-center justify-center gap-2 rounded-full bg-teal-600 text-white px-8 py-4 text-base font-bold hover:bg-teal-700 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 shrink-0"
+              className="flex items-center justify-center gap-2 rounded-full bg-teal-500 text-white px-8 py-4 text-base font-bold hover:bg-teal-400 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 shrink-0"
             >
               <Plus className="size-5" />
               Start a Community
             </Link>
           )}
           {user && activeTab === "messages" && !selectedChatUser && (
-            <button onClick={() => setActiveTab("pulse")} className="flex items-center justify-center gap-2 rounded-full bg-teal-600 text-white px-8 py-4 text-base font-bold hover:bg-teal-700 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 shrink-0">
+            <button onClick={() => setActiveTab("pulse")} className="flex items-center justify-center gap-2 rounded-full bg-teal-500 text-white px-8 py-4 text-base font-bold hover:bg-teal-400 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 shrink-0">
               <UserPlus className="size-5" />
               Find People
             </button>
           )}
         </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
 
         {/* ── NAVIGATION TABS ── */}
         <div className="flex gap-2 border-b border-slate-200 mb-8 overflow-x-auto pb-px" style={{ scrollbarWidth: "none" }}>
@@ -296,7 +307,7 @@ export default function CommunityPage() {
                       <p className="text-xs font-medium text-slate-500 truncate w-full mb-4 mt-0.5"><MapPin className="size-3 inline mr-1" />{person.location || "Local"}</p>
                       
                       <div className="mt-auto w-full flex gap-2">
-                        <button className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 py-2 rounded-xl text-xs font-bold transition-colors">
+                        <button className="flex-1 bg-teal-50 hover:bg-teal-100 text-teal-700 py-2 rounded-xl text-xs font-bold transition-colors">
                           Follow
                         </button>
                         <button onClick={() => startChatWith(person)} className="flex-1 bg-teal-50 hover:bg-teal-100 text-teal-700 py-2 rounded-xl text-xs font-bold transition-colors">
@@ -330,7 +341,7 @@ export default function CommunityPage() {
                           {item.profile?.avatar_url ? <img src={item.profile.avatar_url} alt="" className="size-full object-cover" /> : <span className="text-base font-bold text-slate-400">{item.profile?.full_name?.[0] || "?"}</span>}
                         </div>
                       </Link>
-                      <div className="flex-1 min-w-0 bg-slate-50 rounded-[1.5rem] p-4 sm:p-5 border border-slate-100 group-hover:border-teal-100 transition-colors">
+                      <div className="flex-1 min-w-0 bg-teal-50/40 rounded-[1.5rem] p-4 sm:p-5 border border-teal-100/60 group-hover:border-teal-200 transition-colors">
                         <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
                           <Link href={`/profile/${item.userId}`} className="font-black text-slate-900 hover:text-teal-600 transition-colors mr-1">{item.profile?.full_name || "Someone"}</Link>
                           <span className="font-medium text-slate-500">
@@ -381,7 +392,7 @@ export default function CommunityPage() {
                         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-slate-900/40 to-transparent" />
                         <div className="absolute top-4 left-4 right-4 flex justify-between">
                           {group.category && <span className="bg-lime-400 text-slate-900 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">{group.category}</span>}
-                          {group.is_public ? <span className="bg-white/90 text-slate-900 px-3 py-1.5 rounded-full text-xs font-bold">Public</span> : <span className="bg-slate-900/80 text-white px-3 py-1.5 rounded-full text-xs font-bold">Private</span>}
+                          {group.is_public ? <span className="bg-white/90 text-slate-900 px-3 py-1.5 rounded-full text-xs font-bold">Public</span> : <span className="bg-teal-600/80 text-white px-3 py-1.5 rounded-full text-xs font-bold">Private</span>}
                         </div>
                       </div>
                       <div className="flex flex-col flex-1 p-6">
@@ -407,14 +418,14 @@ export default function CommunityPage() {
             {/* VIEW 1: INBOX LIST */}
             {!selectedChatUser ? (
               <div className="flex flex-col h-full">
-                <div className="p-6 border-b border-slate-100 bg-slate-50">
+                <div className="p-6 border-b border-teal-100/60 bg-teal-50/40">
                   <h2 className="text-xl font-black text-slate-800">Your Chats</h2>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
                   {inboxConversations.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-                      <MessageCircle className="size-12 text-slate-200 mb-3" />
+                      <MessageCircle className="size-12 text-teal-200 mb-3" />
                       <p className="text-slate-500 font-medium">No messages yet.</p>
                       <button onClick={() => setActiveTab("pulse")} className="mt-4 text-sm font-bold text-teal-600 hover:text-teal-800">Find someone to chat with →</button>
                     </div>
@@ -444,7 +455,7 @@ export default function CommunityPage() {
             ) : (
               
             /* VIEW 2: ACTIVE CHAT WINDOW */
-              <div className="flex flex-col h-full bg-slate-50">
+              <div className="flex flex-col h-full bg-teal-50/20">
                 
                 {/* Chat Header */}
                 <div className="flex items-center gap-4 p-4 border-b border-slate-200 bg-white z-10 shadow-sm">
@@ -469,7 +480,7 @@ export default function CommunityPage() {
                       const isMe = msg.sender_id === user.id
                       return (
                         <div key={msg.id || i} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                          <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-[0.95rem] ${isMe ? "bg-teal-600 text-white rounded-br-sm shadow-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"}`}>
+                          <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-[0.95rem] ${isMe ? "bg-teal-500 text-white rounded-br-sm shadow-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"}`}>
                             {msg.content}
                           </div>
                           <span className="text-[10px] font-bold text-slate-400 mt-1 px-1">{format(new Date(msg.created_at), "h:mm a")}</span>
@@ -492,7 +503,7 @@ export default function CommunityPage() {
                   <button 
                     type="submit" 
                     disabled={!newMessage.trim()}
-                    className="size-11 shrink-0 bg-teal-600 text-white rounded-full flex items-center justify-center hover:bg-teal-700 disabled:opacity-50 disabled:hover:bg-teal-600 transition-colors shadow-sm"
+                    className="size-11 shrink-0 bg-teal-500 text-white rounded-full flex items-center justify-center hover:bg-teal-400 disabled:opacity-50 disabled:hover:bg-teal-500 transition-colors shadow-sm"
                   >
                     <Send className="size-4 -ml-0.5" />
                   </button>

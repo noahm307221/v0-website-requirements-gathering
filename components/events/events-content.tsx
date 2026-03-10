@@ -187,18 +187,33 @@ export function EventsContent() {
   if (loading) return null
 
   return (
-    <div className="mx-auto max-w-[1800px] w-full px-8 pb-40">
-      
-      {/* ── CINEMATIC HEADER ── */}
-      <div className="pt-16 mb-16 animate-in fade-in slide-in-from-left-8 duration-1000">
-        <div className="flex items-center gap-4 mb-6">
-           <div className="h-1 w-12 bg-teal-500 rounded-full" />
-           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-teal-600/70">Performance Hub</span>
+    <div className="w-full pb-40">
+
+      {/* ── HERO BANNER ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-teal-50 border-b border-slate-100/60 mb-12">
+        <div className="absolute top-[-30%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-100/40 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[-30%] left-[-5%] w-[400px] h-[400px] rounded-full bg-orange-100/40 blur-[100px] pointer-events-none" />
+        <div className="relative z-10 mx-auto max-w-[1800px] px-8 py-16 animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-teal-700 mb-5 rounded-full bg-white/80 border border-teal-100 px-4 py-2 shadow-sm">
+            <span className="relative flex size-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+              <span className="relative inline-flex rounded-full size-2 bg-teal-500" />
+            </span>
+            Local events near you
+          </div>
+          <h1 className="font-black tracking-tight leading-[1.05] text-slate-900 text-4xl sm:text-5xl md:text-6xl mb-4">
+            Find your{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-400">
+              next challenge
+            </span>
+          </h1>
+          <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-xl">
+            Browse sports clubs, fitness events and group sessions happening near you.
+          </p>
         </div>
-        <h1 className="text-7xl md:text-9xl font-black tracking-[-0.06em] text-slate-900 leading-[0.85] italic uppercase">
-          Find Your <br/> Challenge<span className="text-teal-500">.</span>
-        </h1>
       </div>
+
+      <div className="mx-auto max-w-[1800px] w-full px-8">
 
       {/* ── THE COMMAND CENTER (Sticky Unified Strip) ── */}
       <div className="relative z-40 space-y-6 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
@@ -275,6 +290,7 @@ export function EventsContent() {
       <main className="w-full animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300">
          <EventsGrid events={filteredEvents} onClearFilters={clearFilters} />
       </main>
+      </div>
     </div>
   )
 }
